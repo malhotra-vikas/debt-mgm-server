@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx tsc",
+    "start": "npm run build && node server.js",
+    "dev": "npx ts-node server.ts"
   },
   "keywords": [],
   "author": "",
