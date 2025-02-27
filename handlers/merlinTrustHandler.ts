@@ -5,8 +5,14 @@ const merlinTrustHandler = async (req: Request, res: Response, next: NextFunctio
     console.log("Event Starting");
 
     try {
+    
         console.log("Query parameters:", req.query);
 
+/* req.query is Formatted as 
+        {
+            userquery: 'I am looking for some direction on how to resolve a debt situation'
+        }
+*/    
         const userquery = req.query.userquery as string;
 
         if (!userquery) {

@@ -1,5 +1,6 @@
 import openai from "openai";
 import dotenv from "dotenv";
+import { personalSituationQuestions } from "../lib/personal-situation-questions";
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ interface ConversationContext {
 }
 
 // OpenAI request function
-export async function askMerlinAi(question: string, merlinKnowledgeBase: KnowledgeBase[]): Promise<string> {
+export async function askMerlinTrustBuilder(question: string, merlinKnowledgeBase: KnowledgeBase[]): Promise<string> {
     console.log("askOpenAI - Question:", question);
 
     let effectivePrompt = "";
@@ -31,7 +32,17 @@ export async function askMerlinAi(question: string, merlinKnowledgeBase: Knowled
     console.log("askOpenAI - Effective Prompt:", effectivePrompt);
 
     const chatMessages = [
-        { role: "system", content: "Your name is Alexa. You are the Director of Hospitality for Rose Creek, a Country Club. You answer users' questions about the Club, its offerings, and membership options. You always query the knowledge base to answer queries and never make up information." },
+        { role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
+            Your goal is to build trust and comfort with users. 
+            You use this site to learn about Dealing with Debt https://us.dealingwithdebt.org
+            In your response, you must re-assure the person use why they are at the right place.
+            In your response, you must reassure the porson how you have helped thousands of people get debt free.
+            You always query the knowledge base to answer queries and never make up information.
+            Your responses are consise and of no more than two lines. 
+            
+            **About Dealing WIth Debt:** DWD is a 501 (c) 3 non-profit charitable organization that is addressing this important public health concern by creating the first social
+            platform dedicated to providing a safe space for consumers to connect with peers, complete financial education courses, access engaging content, 
+            obtain information, and access resources and tools needed to achieve personal success.` },
         { role: "user", content: effectivePrompt }
     ];
 
@@ -87,10 +98,12 @@ export async function handleMerlinConversation(userInput: string): Promise<strin
     console.log("handleMerlinConversation - Input:", userInput);
 
     let merlinKnowledgeBase = await getMerlinKnowledgeBase();
+
+    console.log("merlinKnowledgeBase is ", merlinKnowledgeBase)
     if (!merlinKnowledgeBase) merlinKnowledgeBase = [];
 
     try {
-        return await askMerlinAi(userInput, merlinKnowledgeBase);
+        return await askMerlinTrustBuilder(userInput, merlinKnowledgeBase);
     } catch (error) {
         console.error("Error processing AI response:", error);
         return "Sorry, I encountered an error while processing your request.";
@@ -98,6 +111,8 @@ export async function handleMerlinConversation(userInput: string): Promise<strin
 }
 
 export async function getMerlinKnowledgeBase(): Promise<KnowledgeBase[]> {
-
-    return [];
+    return Object.values(personalSituationQuestions).map((q) => ({
+        question: q.question,
+        answer: q.options ? q.options.join(", ") : "No predefined answers",
+    }));
 }
