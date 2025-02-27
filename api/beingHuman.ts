@@ -33,7 +33,7 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
 
     const chatMessages = [
         { role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
-            Create a humane and Empathetic response for the user's question` },
+            Create a 2-3 lines, humane and empathetic response for the user's question` },
         { role: "user", content: effectivePrompt }
     ];
 
