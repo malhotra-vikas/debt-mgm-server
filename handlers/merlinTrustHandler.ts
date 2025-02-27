@@ -15,7 +15,11 @@ const merlinTrustHandler = async (req: Request, res: Response, next: NextFunctio
                 }
         */
         const userquery = req.query.userquery as string;
-        const usercase = req.query.usercase as string;
+        let usercase = req.query.usercase as string;
+
+        if (!usercase) {
+            usercase = "iterate"
+        }
 
 
         if (!userquery) {
@@ -27,7 +31,7 @@ const merlinTrustHandler = async (req: Request, res: Response, next: NextFunctio
 
         console.log("User Query:", userquery);
 
-        const aiResponse = await handleMerlinTrustConversation(userquery);
+        const aiResponse = await handleMerlinTrustConversation(userquery, usercase);
 
         console.log("AI Response:", aiResponse);
 

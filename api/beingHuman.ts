@@ -90,7 +90,7 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
 
 
 // OpenAI request function
-export async function askMerlinTrustBuilder(question: string, merlinTrustKnowledgeBase: TrustKnowledgeBase[]): Promise<string> {
+export async function askMerlinTrustBuilder(question: string, usercase: string, merlinTrustKnowledgeBase: TrustKnowledgeBase[]): Promise<string> {
     console.log("askOpenAI - Question:", question);
 
     let effectivePrompt = "";
@@ -102,7 +102,15 @@ export async function askMerlinTrustBuilder(question: string, merlinTrustKnowled
         effectivePrompt = `Knowledge Base:\n${knowledgeBaseEntries}\n\n`;
 
     }
+
+
     effectivePrompt += `Build a Trust building response for Question: ${question}`;
+
+    if (usercase && usercase === 'NewUser') {
+        effectivePrompt += `. You MUST start with why this is the right place to be`;
+    } else {
+        effectivePrompt += `. You MUST NOT repeat why this is the right place to be. You MUST NOT repeate earlier messages too.`;
+    }
 
     console.log("askOpenAI - Effective Prompt:", effectivePrompt);
 
@@ -111,9 +119,8 @@ export async function askMerlinTrustBuilder(question: string, merlinTrustKnowled
             role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
             Your goal is to build trust and comfort with users. 
             You always query the knowledge base to get information on how to build trust with the user.
-            Your responses are consise and of no more than two lines. 
-            
-` },
+            Your responses are consise and of no more than 2-3 lines. ` 
+        },
         { role: "user", content: effectivePrompt }
     ];
 
@@ -165,7 +172,7 @@ export async function askMerlinTrustBuilder(question: string, merlinTrustKnowled
 }
 
 // Main conversation handler
-export async function handleMerlinTrustConversation(userInput: string): Promise<string> {
+export async function handleMerlinTrustConversation(userInput: string, usercase: string): Promise<string> {
     console.log("handleMerlinConversation - Input:", userInput);
 
     let merlinTrustKnowledgeBase = await getMerlinTrustKnowledgeBase();
@@ -174,7 +181,7 @@ export async function handleMerlinTrustConversation(userInput: string): Promise<
     if (!merlinTrustKnowledgeBase) merlinTrustKnowledgeBase = [];
 
     try {
-        return await askMerlinTrustBuilder(userInput, merlinTrustKnowledgeBase);
+        return await askMerlinTrustBuilder(userInput, usercase, merlinTrustKnowledgeBase);
     } catch (error) {
         console.error("Error processing AI response:", error);
         return "Sorry, I encountered an error while processing your request.";
