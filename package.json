@@ -1,10 +1,11 @@
 {
   "name": "debt-mgm-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "npx tsc",
-    "start": "npm run build && node server.js",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npx tsc",
+    "start": "npm run build && node dist/server.js",
     "dev": "npx ts-node server.ts"
   },
   "keywords": [],

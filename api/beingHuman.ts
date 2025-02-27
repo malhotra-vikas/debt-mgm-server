@@ -18,6 +18,73 @@ interface ConversationContext {
     Context?: string;
 }
 
+
+export async function askMerlinToCreateAHumanResponse(question: string, pastSelection: string, merlinKnowledgeBase: KnowledgeBase[]): Promise<string> {
+    console.log("askOpenAI - Question:", question);
+
+    let effectivePrompt = "";
+    if (merlinKnowledgeBase.length > 0) {
+        const knowledgeBaseEntries = merlinKnowledgeBase.map(entry => `Q: ${entry.question}\nA: ${entry.answer}`).join("\n\n");
+        effectivePrompt = `Knowledge Base:\n${knowledgeBaseEntries}\n\n`;
+    }
+    effectivePrompt += `The user answered as ${pastSelection} to the Question: ${question}`;
+
+    console.log("askOpenAI - Effective Prompt:", effectivePrompt);
+
+    const chatMessages = [
+        { role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
+            Create a humane and Empathetic response for the user's question` },
+        { role: "user", content: effectivePrompt }
+    ];
+
+    const openaiPayload = {
+        model: "gpt-4o-mini",
+        messages: chatMessages,
+        stream: false,
+    }
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify(openaiPayload),
+        })
+    
+    
+        if (!response.ok) {
+            throw new Error(`OpenAI API Error: ${response.status} - ${response.statusText}`);
+        }
+    
+        const responseData = await response.json(); // Extract JSON response
+        console.log("askOpenAI - Parsed Response:", responseData);
+    
+        // Extract AI response text safely
+        const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+
+        return aiResponse
+    
+        
+        //if (response?.data?.choices?.[0]?.message?.content) {
+        //    return response.data.choices[0].message.content.trim();
+        //} else {
+        //    throw new Error("No valid completion received.");
+        /// }
+    } catch (error: any) {
+        console.error("Error in askOpenAI:", error);
+        if (error.response) {
+            console.error("HTTP status:", error.response.status);
+            console.error("Response body:", error.response.data);
+            if (error.response.status === 429) console.error("Rate limit exceeded.");
+            if (error.response.status === 503) console.error("Service unavailable.");
+        }
+        return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
+    }
+}
+
+
 // OpenAI request function
 export async function askMerlinTrustBuilder(question: string, merlinKnowledgeBase: KnowledgeBase[]): Promise<string> {
     console.log("askOpenAI - Question:", question);
@@ -102,6 +169,22 @@ export async function handleMerlinConversation(userInput: string): Promise<strin
 
     try {
         return await askMerlinTrustBuilder(userInput, merlinKnowledgeBase);
+    } catch (error) {
+        console.error("Error processing AI response:", error);
+        return "Sorry, I encountered an error while processing your request.";
+    }
+}
+
+export async function handleMerlinQuestionAppender(pastQuestion: string, pastSelection: string): Promise<string> {
+    console.log("handleMerlinConversation - Input:", pastQuestion);
+
+    let merlinKnowledgeBase = await getMerlinKnowledgeBase();
+
+    console.log("merlinKnowledgeBase is ", merlinKnowledgeBase)
+    if (!merlinKnowledgeBase) merlinKnowledgeBase = [];
+
+    try {
+        return await askMerlinToCreateAHumanResponse(pastQuestion, pastSelection, merlinKnowledgeBase);
     } catch (error) {
         console.error("Error processing AI response:", error);
         return "Sorry, I encountered an error while processing your request.";
