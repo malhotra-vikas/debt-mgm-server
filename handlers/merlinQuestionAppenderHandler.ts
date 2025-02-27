@@ -11,11 +11,11 @@ const merlinQuestionAppenderHandler = async (req: Request, res: Response, next: 
 /* req.query is Formatted as 
         {
             question: 'I am looking for some direction on how to resolve a debt situation'
-            pastSelection: ''
+            selection: ''
         }
 */    
         const pastQuestion = req.query.question as string;
-        const pastSelection = req.query.pastSelection as string;
+        const pastSelection = req.query.selection as string;
 
         if (!pastQuestion) {
             res.status(400).json({
