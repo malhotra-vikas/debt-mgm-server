@@ -1,19 +1,22 @@
 import { Request, Response, NextFunction } from "express";
-import { handleMerlinConversation } from "../api/beingHuman";
+import { handleMerlinTrustConversation } from "../api/beingHuman";
 
 const merlinTrustHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("Event Starting");
 
     try {
-    
+
         console.log("Query parameters:", req.query);
 
-/* req.query is Formatted as 
-        {
-            userquery: 'I am looking for some direction on how to resolve a debt situation'
-        }
-*/    
+        /* req.query is Formatted as 
+                {
+                    userquery: 'I am looking for some direction on how to resolve a debt situation'
+                    case:
+                }
+        */
         const userquery = req.query.userquery as string;
+        const usercase = req.query.usercase as string;
+
 
         if (!userquery) {
             res.status(400).json({
@@ -24,7 +27,7 @@ const merlinTrustHandler = async (req: Request, res: Response, next: NextFunctio
 
         console.log("User Query:", userquery);
 
-        const aiResponse = await handleMerlinConversation(userquery);
+        const aiResponse = await handleMerlinTrustConversation(userquery);
 
         console.log("AI Response:", aiResponse);
 

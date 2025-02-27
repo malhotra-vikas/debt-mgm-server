@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { handleMerlinConversation, handleMerlinQuestionAppender } from "../api/beingHuman";
+import { handleMerlinTrustConversation, handleMerlinQuestionAppender } from "../api/beingHuman";
 
 const merlinQuestionAppenderHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("Event Starting");
