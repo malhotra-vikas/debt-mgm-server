@@ -28,8 +28,9 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
     console.log("askOpenAI - Effective Prompt:", effectivePrompt);
 
     const chatMessages = [
-        { role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
-            Create a 2-3 lines, humane and empathetic response to acknowledge how the user answered the previous question.
+        { role: "system", content: `
+            Create a 2-3 lines, humane and empathetic response to acknowledge how the user answered the previous question
+            ${effectivePrompt}
             ` },
         { role: "user", content: effectivePrompt }
     ];
