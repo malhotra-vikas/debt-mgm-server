@@ -19,21 +19,17 @@ interface ConversationContext {
 }
 
 
-export async function askMerlinToCreateAHumanResponse(question: string, pastSelection: string, merlinKnowledgeBase: KnowledgeBase[]): Promise<string> {
+export async function askMerlinToCreateAHumanResponse(question: string, pastSelection: string): Promise<string> {
     console.log("askOpenAI - Question:", question);
 
     let effectivePrompt = "";
-    if (merlinKnowledgeBase.length > 0) {
-        const knowledgeBaseEntries = merlinKnowledgeBase.map(entry => `Q: ${entry.question}\nA: ${entry.answer}`).join("\n\n");
-        effectivePrompt = `Knowledge Base:\n${knowledgeBaseEntries}\n\n`;
-    }
     effectivePrompt += `The user answered as ${pastSelection} to the Question: ${question}`;
 
     console.log("askOpenAI - Effective Prompt:", effectivePrompt);
 
     const chatMessages = [
         { role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
-            Create a 2-3 lines, humane and empathetic response for the user's question` },
+            Create a 2-3 lines, humane and empathetic response to acknowledge how the user answered the previous question` },
         { role: "user", content: effectivePrompt }
     ];
 
@@ -178,13 +174,8 @@ export async function handleMerlinConversation(userInput: string): Promise<strin
 export async function handleMerlinQuestionAppender(pastQuestion: string, pastSelection: string): Promise<string> {
     console.log("handleMerlinConversation - Input:", pastQuestion);
 
-    let merlinKnowledgeBase = await getMerlinKnowledgeBase();
-
-    console.log("merlinKnowledgeBase is ", merlinKnowledgeBase)
-    if (!merlinKnowledgeBase) merlinKnowledgeBase = [];
-
     try {
-        return await askMerlinToCreateAHumanResponse(pastQuestion, pastSelection, merlinKnowledgeBase);
+        return await askMerlinToCreateAHumanResponse(pastQuestion, pastSelection);
     } catch (error) {
         console.error("Error processing AI response:", error);
         return "Sorry, I encountered an error while processing your request.";
