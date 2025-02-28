@@ -110,6 +110,8 @@ export async function askMerlinTrustBuilder(question: string, usercase: string, 
         effectivePrompt += `. You MUST start with why this is the right place to be`;
     } else {
         effectivePrompt += `. You MUST NOT repeat why this is the right place to be. You MUST NOT repeate earlier messages too.`;
+        effectivePrompt += `. You MUST NOT say how you understand this situation. Just give forward looking statements. `;
+
     }
 
     console.log("askOpenAI - Effective Prompt:", effectivePrompt);
