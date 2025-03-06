@@ -33,8 +33,11 @@ export const saveToDatabase = async (userData: UserData): Promise<UserData> => {
         const { email, data } = userData;
 
         db.run(
-            "INSERT INTO merlinusers (email, data) VALUES (?, json(?)) ON CONFLICT(email) DO UPDATE SET data = excluded.data",
-            [email, JSON.stringify(data)],
+            `INSERT INTO merlinusers (email, data)
+             VALUES (?, json(?))
+             ON CONFLICT(email) 
+             DO UPDATE SET data = json(?)`,
+            [email, JSON.stringify(data), JSON.stringify(data)], // Update existing record with new JSON data
             function (err) {
                 if (err) {
                     return reject(err);
