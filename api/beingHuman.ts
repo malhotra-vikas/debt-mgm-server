@@ -1,6 +1,5 @@
 import openai from "openai";
 import dotenv from "dotenv";
-import { personalSituationQuestions } from "../lib/personal-situation-questions";
 import { TrustPhrases } from "../lib/trust-builder-kb"
 
 dotenv.config();
@@ -200,14 +199,6 @@ export async function handleMerlinQuestionAppender(pastQuestion: string, pastSel
         return "Sorry, I encountered an error while processing your request.";
     }
 }
-
-export async function getMerlinKnowledgeBase(): Promise<KnowledgeBase[]> {
-    return Object.values(personalSituationQuestions).map((q) => ({
-        question: q.question,
-        answer: q.options ? q.options.join(", ") : "No predefined answers",
-    }));
-}
-
 
 export async function getMerlinTrustKnowledgeBase(): Promise<TrustKnowledgeBase[]> {
     const shuffledPhrases = shuffleArray([...TrustPhrases]); // Copy and shuffle
