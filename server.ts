@@ -12,6 +12,8 @@ app.get("/merlin-trust-builder", merlinTrustHandler);
 app.get("/merlin-empathy-response", merlinQuestionAppenderHandler);
 app.get("/merlin-data-handler", merlinDataHandler);
 
+app.post("/merlin-data-handler", merlinDataHandler);
+
 
 const PORT = 3020;
 app.listen(PORT, () => {
