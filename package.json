@@ -13,15 +13,25 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@mailchimp/mailchimp_marketing": "^3.0.80",
     "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "mailchimp-marketing": "^0.0.1-security",
+    "multer": "^1.4.5-lts.1",
     "openai": "^4.85.4",
+    "pg": "^8.14.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/mailchimp__mailchimp_marketing": "^3.0.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.10",
+    "@types/pg": "^8.11.11",
     "@types/sqlite3": "^5.1.0",
     "typescript": "^5.7.3"
   }
