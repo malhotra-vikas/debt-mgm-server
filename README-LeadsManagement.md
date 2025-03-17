@@ -44,9 +44,9 @@ curl -X POST http://ai.dealingwithdebt.org:3020/add-sponsor \
      -H "Content-Type: application/json" \
      -d '{
          "sponsorName": "ClearOne Advantage",
-         "list": "fcef22269b",
-         "apiKey": "854c7707a48909eccadbe750579deb54-us12",
-         "prefix": "us12"
+         "list": "xxxxx",
+         "apiKey": "xxxxxx",
+         "prefix": "xxxxxx"
      }'
 
 📃 Expected CSV Format
