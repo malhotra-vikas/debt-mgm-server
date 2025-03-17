@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         console.log("Link:", link);
 
         // Send data to Mailchimp
-        await addUserToMailchimp(email, fname, lname);
+        await addUserToMailchimp(email, fname, lname, "A", " ", " ");
 
         return res.status(200).json({ success: true, message: "User successfully added to Mailchimp." });
 
