@@ -72,6 +72,26 @@ export const uploadSponsorLeads = async (filePath: string) => {
     }
 };
 // Add a new sponsor
+export const getAllSponsors = async () => {
+    const client = await pool.connect();
+
+    try {
+        // Corrected Query to SELECT all sponsors
+        const result = await client.query(
+            `SELECT sponsor_name, list, apikey, prefix FROM sponsors`
+        );
+
+        console.log("✅ Retrieved Sponsors:", result.rows);
+        return result.rows; // Return sponsors data
+    } catch (error) {
+        console.error("❌ Error fetching sponsors:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+// Add a new sponsor
 export const addNewSponsor = async (sponsorName: string, list: string, apiKey: string, prefix: string) => {
     const client = await pool.connect();
 
@@ -93,6 +113,7 @@ export const addNewSponsor = async (sponsorName: string, list: string, apiKey: s
 
 
 }
+
 
 // INVITE: Process pending invites
 export const inviteSponsorLeads = async (sponsorName: string) => {

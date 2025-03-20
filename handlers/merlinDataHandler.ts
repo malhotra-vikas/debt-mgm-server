@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { saveToDatabase, getUserByEmail } from "../database/dbOperations";
+import { saveToDatabase, getUserByEmail } from "../database/postGresDBOperations";
 
 const merlinDataHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("📌 Event Starting - Handling Request");

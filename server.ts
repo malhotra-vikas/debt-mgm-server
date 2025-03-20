@@ -15,6 +15,7 @@ import {
     updateSponsorLeads,
     deleteSponsorLeads,
     addNewSponsor,
+    getAllSponsors,
 } from "./handlers/sponsorLeadsHandler"; // Import your new CSV processing functions
 
 const app = express();
@@ -138,7 +139,27 @@ app.post("/add-sponsor", async (req: Request, res: Response): Promise<void> => {
     }
 });
 
+// 5 Get all sponsors
+app.get("/get-all-sponsors", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const sponsors = await getAllSponsors();
+        res.json({ 
+            success: true,
+            sponsors: sponsors 
+        });
+    } catch (error) {
+        console.error("Get Sponsors Error:", error);
+        res.status(500).json({ 
+            success: false,
+            error: "Failed to retrieve sponsors" 
+        });
+    }
+});
+
+
 const PORT = 3020;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
+
+
