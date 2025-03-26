@@ -15,6 +15,32 @@ const pool = new Pool({
     port: Number(process.env.DATABASE_PORT) || 5432,
 });
 
+// Update User Data in Database
+export const updateUserData = async (email: string, data: any): Promise<UserData> => {
+    try {
+        const result = await pool.query(
+            `UPDATE merlinusers 
+             SET data = $1 
+             WHERE email = $2 
+             RETURNING email, data`,
+            [data, email]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error("User not found");
+        }
+
+        // Return updated user data
+        return {
+            email: result.rows[0].email,
+            data: result.rows[0].data,
+        };
+    } catch (err) {
+        console.error("❌ Error updating user data in PostgreSQL:", err);
+        throw err;
+    }
+};
+
 
 // Save User to Database
 export const saveToDatabase = async (userData: UserData): Promise<UserData> => {

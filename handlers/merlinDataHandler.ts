@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { saveToDatabase, getUserByEmail } from "../database/postGresDBOperations";
+import { saveToDatabase, getUserByEmail, updateUserData } from "../database/postGresDBOperations";
 
 const merlinDataHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("📌 Event Starting - Handling Request");
@@ -44,12 +44,47 @@ const merlinDataHandler = async (req: Request, res: Response, next: NextFunction
             } else {
                 res.status(200).json(userData);
             }
+        } else if (req.method === "PUT") {
+            const { email, data } = req.body;
+
+            // Validate input
+            if (!email || !data) {
+                res.status(400).json({ error: "Validation Error - Email and Data are required" });
+                return;
+            }
+
+            console.log("📌 Updating Data for Email:", email);
+
+            // Fetch user by email to check if they exist
+            const userData = await getUserByEmail(email);
+
+            if (userData) {
+                // If user exists, update the data
+                const updatedRecord = await updateUserData(email, data);
+                console.log("✅ Data successfully updated:", updatedRecord);
+
+                res.status(200).json({
+                    message: "Data successfully updated",
+                    record: updatedRecord
+                });
+            } else {
+                // If user does not exist, create a new record (like POST)
+                const savedRecord = await saveToDatabase({ email, data });
+
+                console.log("✅ New record created:", savedRecord);
+
+                res.status(201).json({
+                    message: "New data successfully created",
+                    record: savedRecord
+                });
+            }
+
         } else {
             res.status(405).json({ error: "Method Not Allowed" });
         }
 
     } catch (error) {
-        console.error("❌ Error in storeDataHandler:", error);
+        console.error("❌ Error in merlinDataHandler:", error);
         next(error);
     }
 };
