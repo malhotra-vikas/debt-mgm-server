@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { classifyInput } from "../api/beingHuman";
 
 // Define the type for the knowledge base categories
-type KnowledgeBaseCategory = 'vulgar' | 'erroneous' | 'timeAndAvailabilityConcerns' | 'entriesAboutReferralsOrAdvice' | 'privacyConcerns' | 'processFrustration';
+type KnowledgeBaseCategory = 'vulgar' | 'erroneous' | 'time_and_availability_concerns' | 'entries_about_referrals_or_advice' | 'privacy_concerns' | 'process_frustration';
 
 const merlinIntentHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("Event Starting");
@@ -26,9 +26,10 @@ const merlinIntentHandler = async (req: Request, res: Response, next: NextFuncti
 
         // Define the valid categories
         const validCategories: KnowledgeBaseCategory[] = [
-            'vulgar', 'erroneous', 'timeAndAvailabilityConcerns', 
-            'entriesAboutReferralsOrAdvice', 'privacyConcerns', 'processFrustration'
+            'vulgar', 'erroneous', 'time_and_availability_concerns', 
+            'entries_about_referrals_or_advice', 'privacy_concerns', 'process_frustration'            
         ];
+
 
         // Ensure the category is valid before using it
         if (validCategories.includes(category as KnowledgeBaseCategory)) {
