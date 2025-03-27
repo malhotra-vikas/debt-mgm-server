@@ -56,21 +56,16 @@ const merlinSideChatHandler = async (req: Request, res: Response, next: NextFunc
     try {
         console.log("Query parameters:", req.query);
 
-        const userquery = req.query.question as string;
+        const category = req.query.category as string;
 
-        if (!userquery) {
+        if (!category) {
             res.status(400).json({
-                error: "Validation Error - Search Criteria Missing"
+                error: "Validation Error - Category Missing"
             });
             return;
         }
 
-        console.log("User Query:", userquery);
-
-        // Classify the input query into one of the predefined categories
-        const category = await classifyInput(userquery);
-
-        console.log("category:", category);
+        console.log("User category:", category);
 
         // Define the valid categories
         const validCategories: KnowledgeBaseCategory[] = [
