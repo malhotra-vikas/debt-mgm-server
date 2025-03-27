@@ -1,0 +1,104 @@
+{
+    "Process Frustration": [
+        {
+            "phrase": "I can best help you determine a path forward once we complete the four-step process."
+        },
+        {
+            "phrase": "I understand your frustration and I respect that your time is limited and valuable."
+        },
+        {
+            "phrase": "I can be most helpful after getting a clear understanding of your current situation."
+        },
+        {
+            "phrase": "If you can hang in there with me, I truly believe you'll be happy with what we can accomplish together."
+        },
+        {
+            "phrase": "I am here for you. My sole objective is to understand your unique situation."
+        },
+        {
+            "phrase": "We want to provide the best possible guidance for your specific situation."
+        },
+        {
+            "phrase": "I know it feels like a lot, but I want to give you personalized guidance."
+        },
+        {
+            "phrase": "It is totally normal to feel overwhelmed."
+        },
+        {
+            "phrase": "I am here for you to work through this together."
+        },
+        {
+            "phrase": "I understand this process is a challenge, but the details are very important to providing guidance that will be most helpful to you."
+        }
+    ],
+    "Privacy Concerns": [
+        {
+            "phrase": "I can assure you what is said between us stays between us."
+        },
+        {
+            "phrase": "Under no circumstance will we share your information without your express permission."
+        },
+        {
+            "phrase": "Dealing With Debt is a non-profit organization that exists only to assist consumers build the financial future they deserve."
+        },
+        {
+            "phrase": "Please understand, while we may ask for statistics about your income and debt, we will never ask for, nor collect any identifying information about your employers or creditors."
+        },
+        {
+            "phrase": "This chat is secure and encrypted."
+        }
+    ],
+    "Entries about Referrals or Advice": [
+        {
+            "phrase": "While Dealing With Debt does provide guidance and options, we do not recommend, review, endorse, or refer specific companies."
+        },
+        {
+            "phrase": "I understand you are eager for answers. However to provide the best possible guidance we suggest going through our four-step process."
+        },
+        {
+            "phrase": "I would love to help you determine a path forward, but first we need to get a full understanding of your situation."
+        },
+        {
+            "phrase": "I cannot help you evaluate specific offers from companies, but we can help you determine a sensible path forward with actionable steps you can take."
+        }
+    ],
+    "Time and Availability Concerns": [
+        {
+            "phrase": "I understand if you are running short on time right now. We can continue later if that is best for you."
+        },
+        {
+            "phrase": "We can usually get through the whole process in approximately 10 to 15 minutes, depending on the details of your situation."
+        },
+        {
+            "phrase": "We could wrap this up in just a few more minutes if you can spare it."
+        },
+        {
+            "phrase": "I certainly appreciate the time you have already invested."
+        },
+        {
+            "phrase": "I am here for you 24/7, so come back when you have more time."
+        }
+    ],
+    "Erroneous": [
+        {
+            "phrase": "I don't understand your response."
+        },
+        {
+            "phrase": "That response does not appear appropriate for the question."
+        },
+        {
+            "phrase": "I'm having difficulty understanding that response."
+        }
+    ],
+    "Vulgar Entries": [
+        {
+            "phrase": "That language is not appreciated. Please clean it up."
+        },
+        {
+            "phrase": "I am going to take the liberty of ending this conversation now."
+        },
+        {
+            "phrase": "If this continues I'll have to end this chat."
+        }
+    ]
+}

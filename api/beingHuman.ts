@@ -87,6 +87,62 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
     }
 }
 
+export async function classifyInput(input: string): Promise<string> {
+
+    const chatMessages = [
+        {
+            role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). `
+        },
+        { role: "user", content: `Classify the following user input into one of the following categories: vulgar, erroneous, time_and_availability_concerns, entries_about_referrals_or_advice, privacy_concerns, process_frustration. Text: "${input}"\nResponse should only be one of the categories.` }
+    ];
+
+    const openaiPayload = {
+        model: "gpt-4o-mini",
+        messages: chatMessages,
+        stream: false,
+    }
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify(openaiPayload),
+        })
+
+
+        if (!response.ok) {
+            throw new Error(`OpenAI API Error: ${response.status} - ${response.statusText}`);
+        }
+
+        const responseData = await response.json(); // Extract JSON response
+        console.log("askOpenAI - Parsed Response:", responseData);
+
+        // Extract AI response text safely
+        const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+
+        return aiResponse
+
+
+        //if (response?.data?.choices?.[0]?.message?.content) {
+        //    return response.data.choices[0].message.content.trim();
+        //} else {
+        //    throw new Error("No valid completion received.");
+        /// }
+    } catch (error: any) {
+        console.error("Error in askOpenAI:", error);
+        if (error.response) {
+            console.error("HTTP status:", error.response.status);
+            console.error("Response body:", error.response.data);
+            if (error.response.status === 429) console.error("Rate limit exceeded.");
+            if (error.response.status === 503) console.error("Service unavailable.");
+        }
+        return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
+    }
+}
+
 
 // OpenAI request function
 export async function askMerlinTrustBuilder(question: string, usercase: string, merlinTrustKnowledgeBase: TrustKnowledgeBase[]): Promise<string> {
@@ -120,7 +176,7 @@ export async function askMerlinTrustBuilder(question: string, usercase: string, 
             role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
             Your goal is to build trust and comfort with users. 
             You always query the knowledge base to get information on how to build trust with the user.
-            Your responses are consise and of no more than 2-3 lines. ` 
+            Your responses are consise and of no more than 2-3 lines. `
         },
         { role: "user", content: effectivePrompt }
     ];
@@ -172,6 +228,7 @@ export async function askMerlinTrustBuilder(question: string, usercase: string, 
     }
 }
 
+
 // Main conversation handler
 export async function handleMerlinTrustConversation(userInput: string, usercase: string): Promise<string> {
     console.log("handleMerlinConversation - Input:", userInput);
@@ -199,6 +256,15 @@ export async function handleMerlinQuestionAppender(pastQuestion: string, pastSel
         return "Sorry, I encountered an error while processing your request.";
     }
 }
+
+export async function getMerlinSideCarKnowledgeBase(): Promise<TrustKnowledgeBase[]> {
+    const shuffledPhrases = shuffleArray([...TrustPhrases]); // Copy and shuffle
+
+    return shuffledPhrases.map((q) => ({
+        phrase: q.phrase,
+    }));
+}
+
 
 export async function getMerlinTrustKnowledgeBase(): Promise<TrustKnowledgeBase[]> {
     const shuffledPhrases = shuffleArray([...TrustPhrases]); // Copy and shuffle

@@ -17,6 +17,7 @@ import {
     addNewSponsor,
     getAllSponsors,
 } from "./handlers/sponsorLeadsHandler"; // Import your new CSV processing functions
+import merlinSideChatsHandler from "./handlers/merlinSideChatsHandler";
 
 const app = express();
 app.use(cors());
@@ -48,6 +49,7 @@ app.get("/merlin-trust-builder", merlinTrustHandler);
 app.get("/merlin-empathy-response", merlinQuestionAppenderHandler);
 app.get("/merlin-data-handler", merlinDataHandler);
 app.post("/merlin-data-handler", merlinDataHandler);
+app.get("/merlin-side-chats-handler", merlinSideChatsHandler);
 
 // --- New Sponsor CSV Processing Routes ---
 
