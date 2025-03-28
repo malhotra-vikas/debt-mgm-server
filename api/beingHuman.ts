@@ -87,6 +87,73 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
     }
 }
 
+export async function generateOpenAIResponse(userQuery: string, knowledgeBase: string): Promise<string> {
+
+    // Validate inputs
+    if (!userQuery || !knowledgeBase) {
+        throw new Error("Both userQuery and knowledgeBase must be provided.");
+    }
+
+    const prompt = `
+            Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). You help find an appropriate response to user question using the Knowledge Base:
+            ${knowledgeBase}
+            Now, the user is asking: "${userQuery}"
+            Provide a response in a helpful and polite manner. Your response MUST always be within 35 words.
+        `;
+
+    const chatMessages = [
+        {
+            role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). `
+        },
+        { role: "user", content: prompt }
+    ];
+
+    const openaiPayload = {
+        model: "gpt-4o-mini",
+        messages: chatMessages,
+        stream: false,
+    }
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, // Use environment variables for security
+            },
+            body: JSON.stringify(openaiPayload),
+        })
+
+        if (!response.ok) {
+            throw new Error(`OpenAI API Error: ${response.status} - ${response.statusText}`);
+        }
+
+        const responseData = await response.json(); // Extract JSON response
+        console.log("askOpenAI - Parsed Response:", responseData);
+
+        // Extract AI response text safely
+        const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+
+        return aiResponse
+
+    } catch (error: any) {
+        console.error("Error in askOpenAI:", error);
+        // Improve error handling based on error type
+        if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            if (error.message.includes('Rate limit exceeded')) {
+                console.error("Rate limit exceeded.");
+            }
+            if (error.message.includes('Service unavailable')) {
+                console.error("Service unavailable.");
+            }
+        }
+        return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
+    }
+}
+
+
+
 export async function classifyInput(input: string): Promise<string> {
 
     const chatMessages = [
@@ -125,12 +192,6 @@ export async function classifyInput(input: string): Promise<string> {
 
         return aiResponse
 
-
-        //if (response?.data?.choices?.[0]?.message?.content) {
-        //    return response.data.choices[0].message.content.trim();
-        //} else {
-        //    throw new Error("No valid completion received.");
-        /// }
     } catch (error: any) {
         console.error("Error in askOpenAI:", error);
         if (error.response) {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { classifyInput } from "../api/beingHuman";
+import { classifyInput, generateOpenAIResponse } from "../api/beingHuman";
 
 // Define the type for the knowledge base categories
 type KnowledgeBaseCategory = 'vulgar' | 'erroneous' | 'time_and_availability_concerns' | 'entries_about_referrals_or_advice' | 'privacy_concerns' | 'process_frustration';
@@ -35,6 +35,17 @@ const knowledgeBase: Record<KnowledgeBaseCategory, string[]> = {
         "Dealing With Debt is a non-profit organization that exists only to assist consumers build the financial future they deserve.",
         "Please understand, while we may ask for statistics about your income and debt, we will never ask for, nor collect any identifying information about your employers or creditors.",
         "This chat is secure and encrypted.",
+        "If you are looking for guidance for resolving debt, you are in the right place! Our goal is to help people better understand their situation and their options.",
+        "I am looking forward to doing my best to assist you today.",
+        "Most people I talk to are feeling pressure and stress, and may be uncertain what to do about their situation. We are here to help those that are seeking guidance and options.",
+        "I completely understand how frustrating that can be. But that is why Dealing With Debt and I exist!",
+        "We help consumers every day work through their challenges and develop a plan of action to deal them.",
+        "My sole objective is to listen to you describe your unique circumstances, and then provide guidance and options.",
+        "We understand that financial problems are stressful. The good news is that you are in the right place. Our process has been successful with helping people discover a path forward.",
+        "I would love to be able to provide you guidance on a path forward. However, I must first get a full understanding of your unique situation.",
+        "While Dealing With Debt is familiar with many companies aiming to help people with financial issues, we do not recommend specific companies or provide critiques, reviews or endorsements.",
+        "Dealing With Debt is a non-profit organization providing free guidance and support to consumers seeking financial education or assistance during difficult financial circumstances.",
+        "We have an established four-step process that will give us a clear understanding of your situation, and then we can provide guidance and options.",
     ],
     process_frustration: [
         "I can best help you determine a path forward once we complete the four-step process.",
@@ -47,8 +58,9 @@ const knowledgeBase: Record<KnowledgeBaseCategory, string[]> = {
         "It is totally normal to feel overwhelmed.",
         "I am here for you to work through this together.",
         "I understand this process is a challenge, but the details are very important to providing guidance that will be most helpful to you.",
-    ]
+    ],
 };
+
 
 const merlinSideChatHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("Event Starting");
@@ -68,32 +80,26 @@ const merlinSideChatHandler = async (req: Request, res: Response, next: NextFunc
         console.log("User Query:", userquery);
 
         // Classify the input query into one of the predefined categories
-        const category = await classifyInput(userquery);
+        //const category = await classifyInput(userquery);
 
-        console.log("category:", category);
+        //console.log("category:", category);
 
-        // Define the valid categories
-        const validCategories: KnowledgeBaseCategory[] = [
-            'vulgar', 'erroneous', 'time_and_availability_concerns', 
-            'entries_about_referrals_or_advice', 'privacy_concerns', 'process_frustration'            
-        ];
+        // Convert the knowledge base into a single string
+        const flatKnowledgeBase = Object.values(knowledgeBase).flat().join("\n");
 
-        // Ensure the category is valid before using it
-        if (validCategories.includes(category as KnowledgeBaseCategory)) {
-            const responses = knowledgeBase[category as KnowledgeBaseCategory];
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            console.log("AI Response:", randomResponse);
 
-            res.status(200).json({ randomResponse });
-        } else {
-            // Handle unexpected category (not valid)
-            res.status(400).json({
-                error: "Invalid category returned from classification"
-            });
-        }
+        // Classify the input query into one of the predefined categories
+        const aiResponse = await generateOpenAIResponse(userquery, flatKnowledgeBase);
 
+        console.log("aiResponse:", aiResponse);
+
+        if (aiResponse) {
+            res.status(200).json({ aiResponse });
+        } 
     } catch (error) {
         console.error("Error in merlinTrustHandler:", error);
+        res.status(400);
+
         next(error); // Proper error propagation
     }
 };
