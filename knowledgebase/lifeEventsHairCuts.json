@@ -1,0 +1,12 @@
+{
+    "lifeEventImpact": {
+        "Health Crisis": -1.5,
+        "Family Expanded": -1.5,
+        "Victim of Fraud": -0.5,
+        "Divorce": -1.25,
+        "Death In Family": -0.5,
+        "Other": -0.75,
+        "Catastrophic loss": -1,
+        "Financially supporting extended family": -1
+    }
+}
