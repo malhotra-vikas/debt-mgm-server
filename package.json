@@ -25,6 +25,7 @@
     "openai": "^4.85.4",
     "pdfkit": "^0.16.0",
     "pg": "^8.14.0",
+    "puppeteer": "^24.4.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
