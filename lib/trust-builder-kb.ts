@@ -1,4 +1,4 @@
-import trustPhrasesData from "../lib/trustPhrases.json"
+import trustPhrasesData from "../knowledgebase/trustPhrases.json"
 
 interface TrustPhrase {
     phrase: string
