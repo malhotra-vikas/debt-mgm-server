@@ -14,6 +14,9 @@ build/
 
 *.db
 
+*.csv 
+*.pdf
+
 # Logs
 logs
 *.log
@@ -21,7 +24,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-uploads/
 
 # Environment variables
 .env
