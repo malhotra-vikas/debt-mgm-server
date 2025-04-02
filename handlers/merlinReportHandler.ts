@@ -3,10 +3,13 @@ import { getUserByEmail } from "../database/postGresDBOperations";
 import path from "path";
 import puppeteer from "puppeteer"; // Import Puppeteer
 import axios from "axios";
+import dotenv from "dotenv";
 
 // Importing the UserData interface if needed
 import { Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
-import { calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage } from "../lib/report-utils";
+import { calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, getSentimentLabel } from "../lib/report-utils";
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
 // Define Type for User Data
 interface UserData {
@@ -61,20 +64,49 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
+    // Get the current timestamp to append as a cache buster
+    const timestamp = new Date().getTime();
+    const url = `http://${process.env.HOST}:${process.env.PORT}/styles/report.css?timestamp=${timestamp}`
+
+    let userDisposableIncome = ((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * (12 + reportData.incomeHairCutPercentage) / 100
+
+    let aggregateCCDebt = reportData.debtCards.reduce((sum, card) => sum + card.balance, 0);
+    let aggregateCCLimit = reportData.debtCards.reduce((sum, card) => sum + card.creditLimit, 0);
+    let aggregateCCMinimumPayment = reportData.debtCards.reduce((sum, card) => sum + card.minPaymentDue, 0);
+
+    let debtOverView = `You have an aggregate Credit Card Debt of $${aggregateCCDebt.toFixed(2)}. Your combined credit limit is $${aggregateCCLimit.toFixed(2)}.
+            This puts you at a Credit Utilization bracket of ${(aggregateCCDebt / aggregateCCLimit * 100).toFixed(2)}%.
+            Merlin estimates that your combined monthly minimum payment is about $${aggregateCCMinimumPayment}`
+
+    let disposableIncomeOverView = `We estimate your Disposable Income (also known as monthly income available for you to payoff your debts) to be $${(((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * (12 + reportData.incomeHairCutPercentage) / 100).toFixed(2)} per month.`
+
+    console.log("debtOverView framed as ", debtOverView)
+    console.log("disposableIncomeOverView framed as ", disposableIncomeOverView)
+
+    const sentimentLabel = getSentimentLabel(
+        aggregateCCDebt / aggregateCCLimit * 100,
+        aggregateCCMinimumPayment,
+        userDisposableIncome
+    );
+
+    const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView)
+    console.log("aiSummary framed as ", aiSummary)
+
+    const [para1, para2] = aiSummary.split("\n\n").length > 1
+        ? aiSummary.split("\n\n")
+        : aiSummary.split(". ").reduce((acc: string[], sentence: string, idx: number) => {
+            if (idx < 2) acc[0] = (acc[0] || "") + sentence + ". ";
+            else acc[1] = (acc[1] || "") + sentence + ". ";
+            return acc;
+        }, []);
     // Define the HTML content for the PDF
     const content = `
-    <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                h1, h2 { text-align: center; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
-                th { background-color: #f4f4f4; }
-                .chart-container { text-align: center; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href=${url}">
+    </head>
+    <body>
+        <div class="container">
             <h1>Merlin Assessment Report for ${reportData.firstName} ${reportData.lastName}</h1>
 
             <h2>Household Income Analysis</h2>
@@ -86,24 +118,22 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
                 <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
                 <tr><td>${reportData.firstName}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
                 <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
-
             </table>
 
-            <p>${reportData.firstName}, as per our analysis and estimates, your household income will likey own about ${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%
-            in Federal Taxes. This will imply your Federal Tax burdan will be about $${reportData.federalTaxes.toFixed(2)}</p>
+            <p>Based on our analysis, your household income will be subjected to approximately 
+                <span class="highlight">${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%</span> in federal taxes, amounting to 
+                $${reportData.federalTaxes.toFixed(2)}.</p>
 
-            <p>Your Household Monthly After-Tax Income will be about $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}</p>
+            <p>Your monthly after-tax income will be about 
+                $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}.</p>
 
             <h2>Life Events Analysis</h2>
+            <p>${reportData.firstName}, you mentioned having experienced the following life events:</p>
+            <ul>${reportData.lifeEventsList}</ul>
 
-            <p>${reportData.firstName}, you mentioned having experienced the followings:
-                <ul>
-                    ${reportData.lifeEventsList}
-                </ul>
-
-            <p> As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
-            for you to payoff your debts) to be $${(((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * (12+reportData.incomeHairCutPercentage)/100).toFixed(2)}
-
+            <p>As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
+                for you to payoff your debts) to be <span class="highlight">${userDisposableIncome} per month.</span>
+            </p>
 
             <h2>Debt Analysis</h2>
             <table>
@@ -127,32 +157,36 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
                 `).join('')}
             </table>
 
-            <tr />
-            <tr />
-            <tr />
-
-            <h2>Debt Free Outlook</h2>
+            <h3>Debt Free Outlook</h3>
             <table>
                 <tr>
                     <th>Card Type</th>
                     <th>Balance</th>
                     <th>Interest</th>
+                    <th>Minimum Payment Due</th>
                     <th>Payoff Time (Months)</th>
                 </tr>
                 ${reportData.debtCards.map((card: any) => `
                 <tr>
                     <td>${card.cardType}</td>
                     <td>$${card.balance.toFixed(2)}</td>
-                    <td>${card.interest}</td>
-                    <td>${Math.ceil(card.balance / (card.monthlyPaymentType === 'Minimum Required' ? 0.02 : 0.05))} months</td>
+                    <td>${parseFloat(card.interest).toFixed(2)}</td>
+                    <td>$${card.minPaymentDue.toFixed(2)}</td>
+                    <td>Open Questions</td>
                 </tr>
+                
                 `).join('')}
             </table>
+            <h2>Merlin Debt Sentiment Summary</h2>
 
-            <p>PLaceholder for an AI generated analysis and summary of the User's Debt Situation</p>
+            <h3>Debt Sentiment: <span class="sentiment-label">${sentimentLabel}</span></h3>
+
+            <div class="ai-summary">
+                <p><em>${para1}</em></p>
+                <p><em>${para2}</em></p>
+            </div>
 
             <h2>Other Debt</h2>
-
             <h2>Total Monthly Debt Costs</h2>
 
             <h2>Income to Debt Ratio</h2>
@@ -174,7 +208,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
             <div class="chart-container">
                 <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Breakdown Chart" width="400">
             </div>
-
+        </div>
         </body>
     </html>
     `;
@@ -219,7 +253,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             let annualIncomes = calculateTotalAnnualIncome(userData);
             let houseHoldAnnualIncome = annualIncomes.houseHoldAnnualIncome
             let spouseAnnualSalary = annualIncomes.spouseIncome
-            
+
             console.log("📌 Successfully computed Annual Household Income :", houseHoldAnnualIncome);
             console.log("📌 Successfully computed Annual Spouse Income :", spouseAnnualSalary);
 
@@ -249,9 +283,20 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 .filter(event => event !== '') // Remove any empty strings
                 .map(event => `<li>${event}</li>`) // Format each life event as a list item
                 .join(''); // Join all list items into a single string
-    
+
             console.log("📌 Successfully computed Income Hair Cut due to Life Events:", incomeHairCutPercentage);
             console.log("📌 Successfully computed User Life Events:", lifeEventsList);
+
+            const enrichedCards = userData.data.userCards.map((card: any) => {
+                const interestRate = parseFloat(card.interest) || 0; // assume 0 if missing
+                const monthlyRate = interestRate / 100 / 12;
+                const minPaymentDue = (monthlyRate * card.balance) + (0.01 * card.balance);
+
+                return {
+                    ...card,
+                    minPaymentDue: parseFloat(minPaymentDue.toFixed(2)) // add field
+                };
+            });
 
             // Generate Pie Chart for Household Spending
             const chartBuffer = await generatePieChart();
@@ -267,7 +312,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 federalTaxes,
                 lifeEventsList,
                 incomeHairCutPercentage,
-                debtCards: userData.data.userCards,
+                debtCards: enrichedCards,
                 chartBase64,
                 //recommendations: generateRecommendations(userData)
             };
@@ -303,3 +348,60 @@ const generateRecommendations = (userData: UserData): string => {
 };
 
 export default merlinReportHandler;
+
+async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string) {
+
+    let effectivePrompt = `Use Debt Overview: ${debtOverView} and Disposable Income Overview: ${disposableIncomeOverView}.
+    Give me a 2 para summary on debt outlook. Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+
+    const chatMessages = [
+        {
+            role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
+            Your goal is to build a trust worthy and reliable debt management report for the users. 
+            Your responses will be added to the report that is sent to the users  `
+        },
+        { role: "user", content: effectivePrompt }
+    ];
+
+    const openaiPayload = {
+        model: "gpt-4o-mini",
+        messages: chatMessages,
+        stream: false,
+    }
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify(openaiPayload),
+        })
+
+
+        if (!response.ok) {
+            throw new Error(`OpenAI API Error: ${response.status} - ${response.statusText}`);
+        }
+
+        const responseData = await response.json(); // Extract JSON response
+        console.log("askOpenAI - Parsed Response:", responseData);
+
+        // Extract AI response text safely
+        const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
+
+        return aiResponse
+
+    } catch (error: any) {
+        console.error("Error in askOpenAI:", error);
+        if (error.response) {
+            console.error("HTTP status:", error.response.status);
+            console.error("Response body:", error.response.data);
+            if (error.response.status === 429) console.error("Rate limit exceeded.");
+            if (error.response.status === 503) console.error("Service unavailable.");
+        }
+        return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
+    }
+
+}
+

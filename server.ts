@@ -162,6 +162,8 @@ app.get("/get-all-sponsors", async (req: Request, res: Response): Promise<void> 
         });
     }
 });
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 const PORT = 3020;

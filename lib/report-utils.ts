@@ -222,3 +222,14 @@ const monthsUntilEnd = (endDate: string): number => {
     const diffTime = endDateObj.getTime() - currentDate.getTime();
     return Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24 * 30))); // Approximate number of months, ensuring no negative value
 };
+
+
+export const getSentimentLabel = (utilization: number, minPayment: number, disposable: number): string => {
+    if (utilization < 30 && minPayment < disposable) {
+        return "✅ Stable";
+    } else if (utilization < 60 && minPayment < disposable) {
+        return "🟡 Caution";
+    } else {
+        return "⚠️ Vulnerable";
+    }
+}

@@ -12,6 +12,7 @@ export interface UserCard {
     cardUseStatus: string;
     monthlyPaymentType: string;
     paymentTimelyStatus: string;
+    minPaymentDue: number;
 }
 
 export interface UserDebt {
