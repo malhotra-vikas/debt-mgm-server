@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 // Importing the UserData interface if needed
 import { Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
-import { calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, FormValues, getSentimentLabel } from "../lib/report-utils";
+import { calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, emphasizeKeyPhrases, FormValues, getSentimentLabel } from "../lib/report-utils";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
@@ -124,15 +124,15 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         <h2 class="section-title">Household Income Analysis</h2>
         <table>
           <tr><th>Description</th><th>Amount</th></tr>
-          <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
           <tr><td>${reportData.firstName}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
           <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
+          <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
         </table>
         <p>Your household income is subjected to approximately 
           <span class="highlight">${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%</span> in federal taxes, amounting to 
-          $${reportData.federalTaxes.toFixed(2)}.</p>
+          <span class="bold">$${reportData.federalTaxes.toFixed(2)}</span> in Annual Federal taxes</p>
         <p>Your monthly after-tax income will be about 
-          $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}.</p>
+           <span class="bold">$${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}</span>.</p>
       </div>
 
       <!-- Life Events -->
@@ -141,7 +141,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         <p>${reportData.firstName}, you mentioned experiencing the following life events:</p>
         <ul>${reportData.lifeEventsList}</ul>
         <p>As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
-            for you to payoff your debts) to be <span class="highlight">${userDisposableIncome} per month.</span>
+            for you to payoff your debts) to be <span class="highlight">$${userDisposableIncome} per month.</span>
         </p>
       </div>
 
@@ -197,8 +197,8 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         <h3>Merlin Debt Sentiment: <span class="sentiment-label">${sentimentLabel}</span></h3>
 
         <div class="ai-summary">
-          <p><em>${para1}</em></p>
-          <p><em>${para2}</em></p>
+          <p><em>${emphasizeKeyPhrases(para1)}</em></p>
+          <p><em>${emphasizeKeyPhrases(para2)}</em></p>
         </div>
       </div>
 

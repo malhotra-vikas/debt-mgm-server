@@ -331,5 +331,17 @@ function calculateDebtFreeDate(monthsToPayoff: number): string {
     const today = new Date()
     const debtFreeDate = new Date(today.setMonth(today.getMonth() + monthsToPayoff))
     return debtFreeDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-  
+}
+
+
+export function emphasizeKeyPhrases(summary: string): string {
+    return summary
+        // 💰 Dollar amounts like $36,130.00 or $570.36
+        .replace(/\$\d{1,3}(,\d{3})*(\.\d{2})?/g, match => `<span class="bold">${match}</span>`)
+
+        // 📊 Percentages like 79.23% or 12%
+        .replace(/\d{1,3}(\.\d+)?%/g, match => `<span class="bold">${match}</span>`)
+
+        // 📆 Time durations like "62 months" or "12.5 months"
+        .replace(/\b\d+(\.\d+)?\s+(month|months|year|years)\b/gi, match => `<span class="bold">${match}</span>`);
+}
