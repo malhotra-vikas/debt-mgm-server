@@ -61,7 +61,12 @@ const generatePieChart = async (): Promise<Buffer> => {
 };
 
 const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): Promise<string> => {
-    const browser = await puppeteer.launch();
+//    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        headless: true, // or true for older versions
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
     const page = await browser.newPage();
 
     // Get the current timestamp to append as a cache buster
