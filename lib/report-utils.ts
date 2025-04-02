@@ -111,7 +111,7 @@ export const calculateTax = (income: number, filingStatus: 'single' | 'joint'): 
 
 export const calculateTotalAnnualIncome = (userData: UserData): {houseHoldAnnualIncome: number, spouseIncome: number} => {
 
-    console.log("userData is ", userData)
+    console.log("userData is ", JSON.stringify(userData, null, 2))
     // annualSalary already includes user, spouse and partime too
     let totalIncome = parseFloat(userData.data.annualSalary); // Base annual salary
     let spouseIncome = parseFloat(userData.data.spouseAnnualSalary);
