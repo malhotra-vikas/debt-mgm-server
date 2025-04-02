@@ -18,8 +18,9 @@ type LifeEventImpact = {
 import lifeEventData from '../knowledgebase/lifeEventsHairCuts.json';
 
 
-export const computeHairCutPercentage = (userData: UserData): number => {
+export const computeHairCutPercentage = (userData: UserData): {hairCutPercentage: number, lifeEvents: string[]} => {
     let hairCutPercentage = 0;
+    let userLifeEvents: string[] = [];  // Initialize to empty array
 
     // Extract the lifeEventImpact from the imported JSON
     const lifeEventImpact: LifeEventImpact = lifeEventData.lifeEventImpact;
@@ -33,6 +34,8 @@ export const computeHairCutPercentage = (userData: UserData): number => {
     if (typeof lifeEventsForUser === 'string') {
         lifeEventsForUser = lifeEventsForUser.split(',').map(event => event.trim().replace(/^,/, ''));
     }
+
+    userLifeEvents = lifeEventsForUser
 
     // Logging for debugging purposes
     console.log("Cleaned lifeEvents are: ", lifeEventsForUser);
@@ -48,14 +51,16 @@ export const computeHairCutPercentage = (userData: UserData): number => {
     // Case-insensitive check for 'Yes' or 'No' for catastrophic loss
     if (catastropicLossForUser.toLowerCase() === 'yes') {
         hairCutPercentage += lifeEventImpact['Catastrophic loss'] || 0;
+        userLifeEvents.push('Catastrophic loss');
     }
 
     // Case-insensitive check for 'Yes' or 'No' for extended family care
     if (extendedFamilyCareForUser.toLowerCase() === 'yes') {
         hairCutPercentage += lifeEventImpact['Financially supporting extended family'] || 0;
+        userLifeEvents.push('Financially supporting extended family');
     }
 
-    return hairCutPercentage;
+    return {hairCutPercentage: hairCutPercentage, lifeEvents: userLifeEvents};
 
 }
 
@@ -104,11 +109,12 @@ export const calculateTax = (income: number, filingStatus: 'single' | 'joint'): 
 
 
 
-export const calculateTotalAnnualIncome = (userData: UserData): number => {
+export const calculateTotalAnnualIncome = (userData: UserData): {houseHoldAnnualIncome: number, spouseIncome: number} => {
 
     console.log("userData is ", userData)
     // annualSalary already includes user, spouse and partime too
     let totalIncome = parseFloat(userData.data.annualSalary); // Base annual salary
+    let spouseIncome = parseFloat(userData.data.spouseAnnualSalary);
 
 
     // Alimony, check if it's provided and active
@@ -200,7 +206,7 @@ export const calculateTotalAnnualIncome = (userData: UserData): number => {
     }
 
 
-    return totalIncome;
+    return {houseHoldAnnualIncome: totalIncome, spouseIncome: spouseIncome} ;
 };
 
 

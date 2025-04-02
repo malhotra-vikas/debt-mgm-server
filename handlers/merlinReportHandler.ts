@@ -5,7 +5,7 @@ import puppeteer from "puppeteer"; // Import Puppeteer
 import axios from "axios";
 
 // Importing the UserData interface if needed
-import { Data } from "../lib/UserData";  // Adjust this path as needed
+import { Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
 import { calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage } from "../lib/report-utils";
 
 // Define Type for User Data
@@ -13,6 +13,19 @@ interface UserData {
     email: string;
     data: any;
 }
+
+type ReportData = {
+    email: string;
+    name: string;
+    houseHoldAnnualIncome: number;
+    spouseAnnualSalary: number;
+    federalTaxes: number;
+    incomeHairCutPercentage: number;
+    lifeEventsList: string,
+    debtCards: UserCard[]; // Assuming userCards is an array of UserCard objects
+    chartBase64: string;
+    //recommendations: string[]; // Assuming recommendations is an array of strings
+};
 
 const generatePieChart = async (): Promise<Buffer> => {
     const chartData = {
@@ -43,7 +56,7 @@ const generatePieChart = async (): Promise<Buffer> => {
     }
 };
 
-const generatePdfWithPuppeteer = async (userData: any, email: string): Promise<string> => {
+const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): Promise<string> => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -61,21 +74,35 @@ const generatePdfWithPuppeteer = async (userData: any, email: string): Promise<s
             </style>
         </head>
         <body>
-            <h1>Report for ${email}</h1>
+            <h1>Report for ${reportData.name} ${email}</h1>
 
-            <h2>Income Analysis</h2>
+            <h2>Household Income Analysis</h2>
             <table>
                 <tr>
                     <th>Description</th>
                     <th>Amount</th>
                 </tr>
-                <tr><td>Gross Annual Income</td><td>$${userData.annualSalary.toFixed(2)}</td></tr>
-                <tr><td>Gross Monthly Income</td><td>$${(userData.annualSalary / 12).toFixed(2)}</td></tr>
-                <tr><td>Estimated Federal Tax</td><td>$${userData.federalTaxes.toFixed(2)}</td></tr>
-                <tr><td>Estimated Tax Bracket</td><td>${(userData.federalTaxes / userData.annualSalary * 100).toFixed(2)}%</td></tr>
-                <tr><td>Estimated Net After-Tax Income</td><td>$${(userData.annualSalary - userData.federalTaxes).toFixed(2)}</td></tr>
-                <tr><td>Estimated Monthly Debt Budget</td><td>$${((userData.annualSalary - userData.federalTaxes) * 0.12 / 12).toFixed(2)}</td></tr>
+                <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
+                <tr><td>${reportData.name}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
+                <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
+
             </table>
+
+            <p>${reportData.name}, as per our analysis and estimates, your household income will likey own about ${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%
+            in Federal Taxes. This will imply your Federal Tax burdan will be about $${reportData.federalTaxes.toFixed(2)}</p>
+
+            <p>Your Household Monthly After-Tax Income will be about $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}</p>
+
+            <h2>Life Events Analysis</h2>
+
+            <p>${reportData.name}, you mentioned having experienced the followings:
+                <ul>
+                    ${reportData.lifeEventsList}
+                </ul>
+
+            <p> As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
+            for you to payoff your debts) to be $${(((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * (12+reportData.incomeHairCutPercentage)/100).toFixed(2)}
+
 
             <h2>Debt Analysis</h2>
             <table>
@@ -85,7 +112,7 @@ const generatePdfWithPuppeteer = async (userData: any, email: string): Promise<s
                     <th>Utilization</th>
                     <th>Payoff Time (Months)</th>
                 </tr>
-                ${userData.debtCards.map((card: any) => `
+                ${reportData.debtCards.map((card: any) => `
                 <tr>
                     <td>${card.cardType}</td>
                     <td>$${card.balance.toFixed(2)}</td>
@@ -97,11 +124,11 @@ const generatePdfWithPuppeteer = async (userData: any, email: string): Promise<s
 
             <h2>Household Spending Breakdown</h2>
             <div class="chart-container">
-                <img src="data:image/png;base64,${userData.chartBase64}" alt="Spending Breakdown Chart" width="400">
+                <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Breakdown Chart" width="400">
             </div>
 
             <h2>Recommendations & Options</h2>
-            <p>${userData.recommendations}</p>
+
         </body>
     </html>
     `;
@@ -143,36 +170,48 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
 
             console.log("📌 Successfully fetched user data for Email:", email);
 
-            let annualSalary = calculateTotalAnnualIncome(userData);
-            console.log("📌 Successfully computed Annual Salary :", annualSalary);
+            let annualIncomes = calculateTotalAnnualIncome(userData);
+            let houseHoldAnnualIncome = annualIncomes.houseHoldAnnualIncome
+            let spouseAnnualSalary = annualIncomes.spouseIncome
+            
+            console.log("📌 Successfully computed Annual Household Income :", houseHoldAnnualIncome);
+            console.log("📌 Successfully computed Annual Spouse Income :", spouseAnnualSalary);
 
             let filingStatus: 'single' | 'joint' = 'single';  // Default to 'single'
 
             // Check if the spouse has an annual salary and if it's valid (non-empty, greater than 0)
-            if (userData.data.spouseAnnualSalary && parseFloat(userData.data.spouseAnnualSalary) > 0) {
+            if (spouseAnnualSalary && parseFloat(userData.data.spouseAnnualSalary) > 0) {
                 filingStatus = 'joint';  // Set to 'joint' if spouse has a valid salary
             }
 
-            let federalTaxes = calculateTax(annualSalary, filingStatus);
+            let federalTaxes = calculateTax(houseHoldAnnualIncome, filingStatus);
             console.log("📌 Successfully computed Federal Taxes :", federalTaxes);
 
-            let estimateTaxBracket = federalTaxes / annualSalary;
+            let estimateTaxBracket = federalTaxes / houseHoldAnnualIncome;
             console.log("📌 Successfully computed Federal Estimate TaxBracket :", estimateTaxBracket);
 
-            let afterTaxAnnualIncome = annualSalary - federalTaxes;
+            let afterTaxAnnualIncome = houseHoldAnnualIncome - federalTaxes;
             let afterTaxMonthlyIncome = afterTaxAnnualIncome / 12;
 
             console.log(`📌 Successfully computed After Taxes income. Annual: ${afterTaxAnnualIncome} and Monthly: ${afterTaxMonthlyIncome}`);
 
-            let incomeHairCutPercentage = computeHairCutPercentage(userData);
+            let userEventsAndImppact = computeHairCutPercentage(userData);
+            let incomeHairCutPercentage = userEventsAndImppact.hairCutPercentage
+            let userLifeEvents = userEventsAndImppact.lifeEvents
 
+            const lifeEventsList = userLifeEvents
+                .filter(event => event !== '') // Remove any empty strings
+                .map(event => `<li>${event}</li>`) // Format each life event as a list item
+                .join(''); // Join all list items into a single string
+    
             console.log("📌 Successfully computed Income Hair Cut due to Life Events:", incomeHairCutPercentage);
+            console.log("📌 Successfully computed User Life Events:", lifeEventsList);
 
             // Calculate the yearly and monthly disposable income after applying the income haircut
-            let afterTaxAnnualIncomeAfterHairCut = afterTaxAnnualIncome * (1 + incomeHairCutPercentage / 100); // Convert percentage to decimal
-            let afterTaxMonthlyIncomeAfterHairCut = afterTaxAnnualIncomeAfterHairCut / 12;
+            //let afterTaxAnnualIncomeAfterHairCut = afterTaxAnnualIncome * (1 + incomeHairCutPercentage / 100); // Convert percentage to decimal
+            //let afterTaxMonthlyIncomeAfterHairCut = afterTaxAnnualIncomeAfterHairCut / 12;
 
-            console.log(`📌 Successfully computed Disposable Income. Annual: ${afterTaxAnnualIncomeAfterHairCut} and Monthly: ${afterTaxMonthlyIncomeAfterHairCut}`);
+            //console.log(`📌 Successfully computed Disposable Income. Annual: ${afterTaxAnnualIncomeAfterHairCut} and Monthly: ${afterTaxMonthlyIncomeAfterHairCut}`);
 
 
             // Generate Pie Chart for Household Spending
@@ -180,13 +219,17 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             const chartBase64 = chartBuffer.toString('base64'); // Convert the chart to base64
 
             // Preparing data for the report
-            const reportData = {
+            const reportData: ReportData = {
                 email,
-                annualSalary,
+                name: userData.data.personFirstName,
+                houseHoldAnnualIncome,
+                spouseAnnualSalary,
                 federalTaxes,
+                lifeEventsList,
+                incomeHairCutPercentage,
                 debtCards: userData.data.userCards,
                 chartBase64,
-                recommendations: generateRecommendations(userData)
+                //recommendations: generateRecommendations(userData)
             };
 
             // Generate PDF using Puppeteer
