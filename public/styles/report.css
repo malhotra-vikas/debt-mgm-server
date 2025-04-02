@@ -1,194 +1,215 @@
-            /* Global Styles */
-            body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 0;
-                background-color: #f4f4f4;
-                color: #333;
-                line-height: 1.6;
-            }
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
 
-            /* Container for all content */
-            .container {
-                width: 80%;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #ffffff;
-                border-radius: 8px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
+.header {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
 
-            h1,
-            h2,
-            h3 {
-                color: #2c3e50;
-                font-weight: bold;
-            }
+.logo {
+    width: 160px;
+    height: auto;
+}
 
-            h1 {
-                font-size: 26px;
-                text-align: center;
-                margin-bottom: 30px;
-            }
+/* Container for all content */
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-            h2 {
-                font-size: 22px;
-                margin-top: 30px;
-                margin-bottom: 15px;
-                text-align: left;
-                border-bottom: 2px solid #3498db;
-                padding-bottom: 8px;
-            }
+h1,
+h2,
+h3 {
+    color: #2c3e50;
+    font-weight: bold;
+}
 
-            h3 {
-                font-size: 18px;
-                margin-top: 20px;
-                margin-bottom: 10px;
-                color: #3498db;
-            }
+h1 {
+    font-size: 26px;
+    text-align: center;
+    margin-bottom: 30px;
+}
 
-            p {
-                font-size: 14px;
-                line-height: 1.6;
-                margin: 10px 0;
-                text-align: justify;
-            }
+h2 {
+    font-size: 22px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    text-align: left;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 8px;
+}
 
-            ul {
-                margin: 10px 0;
-                padding-left: 20px;
-            }
+h3 {
+    font-size: 18px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #3498db;
+}
 
-            li {
-                font-size: 14px;
-                line-height: 1.6;
-            }
+p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 10px 0;
+    text-align: justify;
+}
 
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-                page-break-inside: avoid;
-                /* Prevents page breaks inside the table */
-            }
+ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
 
-            th,
-            td {
-                padding: 15px;
-                border: 1px solid #ddd;
-                text-align: left;
-            }
+li {
+    font-size: 14px;
+    line-height: 1.6;
+}
 
-            th {
-                background-color: #3498db;
-                color: white;
-                font-weight: bold;
-            }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    page-break-inside: avoid;
+    /* Prevents page breaks inside the table */
+}
 
-            td {
-                background-color: #fff;
-            }
+th,
+td {
+    padding: 15px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
 
-            .chart-container {
-                text-align: center;
-                margin-top: 30px;
-                margin-bottom: 30px;
-            }
+th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+}
 
-            .header {
-                text-align: center;
-                margin-top: 30px;
-                margin-bottom: 20px;
-            }
+td {
+    background-color: #fff;
+}
 
-            .logo {
-                width: 160px;
-                height: auto;
-            }
+.chart-container {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
 
-            .highlight {
-                color: #e74c3c;
-                font-weight: bold;
-            }
+.header {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
 
-            .subheader {
-                font-size: 16px;
-                font-weight: bold;
-                color: #34495e;
-            }
+.logo {
+    width: 160px;
+    height: auto;
+}
 
-            .summary-section {
-                background-color: #ecf0f1;
-                padding: 15px;
-                border-left: 4px solid #3498db;
-                margin-top: 20px;
-            }
+.highlight {
+    color: #e74c3c;
+    font-weight: bold;
+}
 
-            .footer {
-                position: fixed;
-                bottom: 20px;
-                width: 100%;
-                text-align: center;
-                font-size: 12px;
-                color: #7f8c8d;
-            }
+.subheader {
+    font-size: 16px;
+    font-weight: bold;
+    color: #34495e;
+}
 
-            .footer a {
-                color: #3498db;
-                text-decoration: none;
-            }
+.section {
+    background-color: #f8f9fb;
+    border-radius: 6px;
+}
 
-            /* Page Break for Sections */
-            h2,
-            h3 {
-                page-break-before: auto;
-                /* Ensure no break before headings */
-            }
+.section-title {
+    font-size: 18px;
+    color: #2c3e50;
+    font-weight: bold;
+}
 
-            .table-summary {
-                margin-top: 20px;
-                padding: 10px;
-                background-color: #f9f9f9;
-                page-break-before: always;
-                /* Forces a page break before each table */
-            }
+.summary-section {
+    background-color: #ecf0f1;
+    border-left: 4px solid #3498db;
+    margin-top: 20px;
+}
 
-            .page-break {
-                page-break-before: always;
-              }
-              
-            .ai-summary {
-                background-color: #f9f9f9;
-                font-style: italic;
-                margin-top: 5px;
-                font-size: 14px;
-            }
+.footer {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #7f8c8d;
+}
 
-            .sentiment-label {
-                font-weight: bold;
-                font-size: 16px;
-                padding: 4px 8px;
-                background-color: #f2f2f2;
-                display: inline-block;
-                margin-bottom: 10px;
-            }
+.footer a {
+    color: #3498db;
+    text-decoration: none;
+}
 
-            /* Responsive for smaller screens */
-            @media (max-width: 768px) {
-                .container {
-                    width: 95%;
-                    padding: 15px;
-                }
+/* Page Break for Sections */
+h2,
+h3 {
+    page-break-before: auto;
+    /* Ensure no break before headings */
+}
 
-                h1 {
-                    font-size: 22px;
-                }
+.table-summary {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    page-break-before: always;
+    /* Forces a page break before each table */
+}
 
-                h2 {
-                    font-size: 18px;
-                }
+.page-break {
+    page-break-before: always;
+}
 
-                p {
-                    font-size: 12px;
-                }
-            }
+.ai-summary {
+    background-color: #f9f9f9;
+    font-style: italic;
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+.sentiment-label {
+    font-weight: bold;
+    font-size: 16px;
+    padding: 4px 8px;
+    background-color: #f2f2f2;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+/* Responsive for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+
+    p {
+        font-size: 12px;
+    }
+}

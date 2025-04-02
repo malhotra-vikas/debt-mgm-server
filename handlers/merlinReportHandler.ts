@@ -106,116 +106,144 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     // Define the HTML content for the PDF
     const content = `
 <html>
-    <head>
-        <link rel="stylesheet" type="text/css" href=${url}">
-    </head>
-    <body>
-        <div class="container">
-            <h1>Merlin Assessment Report for ${reportData.firstName} ${reportData.lastName}</h1>
+  <head>
+    <link rel="stylesheet" type="text/css" href="http://${process.env.HOST}:${process.env.PORT}/styles/report.css?timestamp=${Date.now()}">
+  </head>
+  <body>
+    <!-- Logo Header -->
+    <div class="header">
+      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" />
+    </div>
 
-            <h2>Household Income Analysis</h2>
-            <table>
-                <tr>
-                    <th>Description</th>
-                    <th>Amount</th>
-                </tr>
-                <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
-                <tr><td>${reportData.firstName}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
-                <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
-            </table>
+    <div class="container">
 
-            <p>Based on our analysis, your household income will be subjected to approximately 
-                <span class="highlight">${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%</span> in federal taxes, amounting to 
-                $${reportData.federalTaxes.toFixed(2)}.</p>
+      <h1>Merlin Assessment Report for ${reportData.firstName} ${reportData.lastName}</h1>
 
-            <p>Your monthly after-tax income will be about 
-                $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}.</p>
+      <!-- Income Section -->
+      <div class="section">
+        <h2 class="section-title">Household Income Analysis</h2>
+        <table>
+          <tr><th>Description</th><th>Amount</th></tr>
+          <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
+          <tr><td>${reportData.firstName}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
+          <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
+        </table>
+        <p>Your household income is subjected to approximately 
+          <span class="highlight">${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%</span> in federal taxes, amounting to 
+          $${reportData.federalTaxes.toFixed(2)}.</p>
+        <p>Your monthly after-tax income will be about 
+          $${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}.</p>
+      </div>
 
-            <h2>Life Events Analysis</h2>
-            <p>${reportData.firstName}, you mentioned having experienced the following life events:</p>
-            <ul>${reportData.lifeEventsList}</ul>
+      <!-- Life Events -->
+      <div class="section">
+        <h2 class="section-title">Life Events Analysis</h2>
+        <p>${reportData.firstName}, you mentioned experiencing the following life events:</p>
+        <ul>${reportData.lifeEventsList}</ul>
+        <p>As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
+            for you to payoff your debts) to be <span class="highlight">${userDisposableIncome} per month.</span>
+        </p>
+      </div>
 
-            <p>As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
-                for you to payoff your debts) to be <span class="highlight">${userDisposableIncome} per month.</span>
-            </p>
+      <!-- Debt Overview -->
+      <div class="section page-break">
+        <h2 class="section-title">Debt Analysis</h2>
+        <table>
+          <tr>
+            <th>Card Type</th>
+            <th>Balance</th>
+            <th>Utilization</th>
+            <th>Payment Status</th>
+            <th>Payment Type</th>
+            <th>Card Status</th>
+          </tr>
+          ${reportData.debtCards.map(card => `
+            <tr>
+              <td>${card.cardType}</td>
+              <td>$${card.balance.toFixed(2)}</td>
+              <td>${(card.balance / card.creditLimit * 100).toFixed(2)}%</td>
+              <td>${card.paymentTimelyStatus}</td>
+              <td>${card.monthlyPaymentType}</td>
+              <td>${card.cardUseStatus}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
 
-            <h2>Debt Analysis</h2>
-            <table>
-                <tr>
-                    <th>Card Type</th>
-                    <th>Balance</th>
-                    <th>Utilization</th>
-                    <th>Payment Status</th>
-                    <th>Payment Type</th>
-                    <th>Card Status</th>
-                </tr>
-                ${reportData.debtCards.map((card: any) => `
-                <tr>
-                    <td>${card.cardType}</td>
-                    <td>$${card.balance.toFixed(2)}</td>
-                    <td>${(card.balance / card.creditLimit * 100).toFixed(2)}%</td>
-                    <td>${card.paymentTimelyStatus}</td>
-                    <td>${card.monthlyPaymentType}</td>
-                    <td>${card.cardUseStatus}</td>
-                </tr>
-                `).join('')}
-            </table>
+      <!-- Payoff Outlook -->
+      <div class="section">
+        <h2 class="section-title">Debt Free Outlook</h2>
+        <table>
+          <tr>
+            <th>Card Type</th>
+            <th>Balance</th>
+            <th>Interest</th>
+            <th>Minimum Payment Due</th>
+            <th>Payoff Time (Months)</th>
+            <th>Total Interest Paid</th>
+          </tr>
+          ${reportData.debtCards.map(card => `
+            <tr>
+              <td>${card.cardType}</td>
+              <td>$${card.balance.toFixed(2)}</td>
+              <td>${card.interest}%</td>
+              <td>$${card.minPaymentDue.toFixed(2)}</td>
+              <td>${card.payoffMonths}</td>
+              <td>$${card.totalInterestPaid.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </table>
 
-            <h3>Debt Free Outlook</h3>
-            <table>
-                <tr>
-                    <th>Card Type</th>
-                    <th>Balance</th>
-                    <th>Interest</th>
-                    <th>Minimum Payment Due</th>
-                    <th>Payoff Time (Months)</th>
-                    <th>Total Interest Paid</th>
-                </tr>
-                ${reportData.debtCards.map((card: any) => `
-                <tr>
-                    <td>${card.cardType}</td>
-                    <td>$${card.balance.toFixed(2)}</td>
-                    <td>${parseFloat(card.interest).toFixed(2)}</td>
-                    <td>$${card.minPaymentDue}</td>
-                    <td>${card.payoffMonths}</td>
-                    <td>$${card.totalInterestPaid}</td>
-                </tr>
-                
-                `).join('')}
-            </table>
+        <h3>Merlin Debt Sentiment: <span class="sentiment-label">${sentimentLabel}</span></h3>
 
-            <h3>Merlin Debt Sentiment Summary: <span class="sentiment-label">${sentimentLabel}</span></h3>
-
-            <div class="ai-summary">
-                <p><em>${para1}</em></p>
-                <p><em>${para2}</em></p>
-            </div>
-
-            <h2>Other Debt</h2>
-            <h2>Total Monthly Debt Costs</h2>
-
-            <h2>Income to Debt Ratio</h2>
-            <p>PLaceholder for an AI generated analysis and summary</p>
-
-            <h2>Credit Card Usage Analysis</h2>
-            <p>PLaceholder for an AI generated analysis and summary</p>
-
-            <h2>Hardship and Vulnerability Factors</h2>
-            <p>PLaceholder for an AI generated analysis and summary</p>
-
-            <h2>Final Recommendation</h2>
-            <p>PLaceholder for an AI generated analysis and summary</p>
-
-            <h2>Next Steps and Suggestions</h2>
-            <p>PLaceholder for an AI generated analysis and summary</p>
-
-            <h2>Household Spending Breakdown</h2>
-            <div class="chart-container">
-                <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Breakdown Chart" width="400">
-            </div>
+        <div class="ai-summary">
+          <p><em>${para1}</em></p>
+          <p><em>${para2}</em></p>
         </div>
-        </body>
-    </html>
+      </div>
+
+        <div class="section">
+            <h2 class="section-title">Other Debt</h2>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Total Monthly Debt Costs</h2>
+        </div>        
+
+        <div class="section">
+            <h2 class="section-title">Credit Card Usage Analysis</h2>
+        </div>   
+        
+        <div class="section">
+            <h2 class="section-title">Hardship and Vulnerability Factors</h2>
+        </div>           
+
+        <div class="section">
+            <h2 class="section-title">Merlin's Recommendation</h2>
+        </div>    
+        
+        <div class="section">
+            <h2 class="section-title">Next Steps and Suggestions</h2>
+        </div>    
+        
+        
+      <!-- Visual Chart -->
+      <div class="section">
+        <h2 class="section-title">Household Spending Breakdown</h2>
+        <div class="chart-container">
+          <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Chart" width="400">
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer>
+        Report generated by Merlin • ${new Date().toLocaleDateString()}
+      </footer>
+
+    </div>
+  </body>
+</html>
+
     `;
 
     // Set the content and generate the PDF
@@ -296,7 +324,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 const interestRate = parseFloat(card.interest) || 0;
                 const monthlyRate = interestRate / 100 / 12;
                 const minPaymentDue = (monthlyRate * card.balance) + (0.01 * card.balance);
-            
+
                 const formValues: FormValues = {
                     principal: card.balance,
                     apr: interestRate,
@@ -304,16 +332,16 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                     additionalPayment: 0, // assume no extra payment
                     requiredPrincipalPercentage: 1 // 1% as per your logic
                 };
-            
+
                 const [_, summary] = calculatePaymentSchedule(formValues);
-            
+
                 return {
                     ...card,
                     minPaymentDue: parseFloat(minPaymentDue.toFixed(2)),
                     payoffMonths: summary.monthsToPayoff,
                     totalInterestPaid: summary.totalInterestPaid
                 };
-            });                    
+            });
 
 
             // Generate Pie Chart for Household Spending
