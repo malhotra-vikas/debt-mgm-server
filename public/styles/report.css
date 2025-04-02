@@ -95,6 +95,17 @@
                 margin-bottom: 30px;
             }
 
+            .header {
+                text-align: center;
+                margin-top: 30px;
+                margin-bottom: 20px;
+            }
+
+            .logo {
+                width: 160px;
+                height: auto;
+            }
+
             .highlight {
                 color: #e74c3c;
                 font-weight: bold;
@@ -142,14 +153,17 @@
                 /* Forces a page break before each table */
             }
 
-
+            .page-break {
+                page-break-before: always;
+              }
+              
             .ai-summary {
                 background-color: #f9f9f9;
                 font-style: italic;
                 margin-top: 5px;
                 font-size: 14px;
             }
-            
+
             .sentiment-label {
                 font-weight: bold;
                 font-size: 16px;
@@ -158,7 +172,7 @@
                 display: inline-block;
                 margin-bottom: 10px;
             }
-                        
+
             /* Responsive for smaller screens */
             @media (max-width: 768px) {
                 .container {
