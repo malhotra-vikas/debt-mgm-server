@@ -13,6 +13,8 @@ export interface UserCard {
     monthlyPaymentType: string;
     paymentTimelyStatus: string;
     minPaymentDue: number;
+    totalInterestPaid: number;
+    payoffMonths: number;
 }
 
 export interface UserDebt {

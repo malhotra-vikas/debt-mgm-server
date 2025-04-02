@@ -13,12 +13,44 @@ type LifeEventImpact = {
     [key: string]: number;
 };
 
+export type FormValues = {
+    principal: number;
+    apr: number;
+    minimumPayment: number;
+    additionalPayment: number;
+    requiredPrincipalPercentage: number;
+}
+
+type PaymentScheduleItem = {
+    month: number;
+    startingBalance: number;
+    balance: number;
+    payment: number;
+    principal: number;
+    interest: number;
+    cumulativePrincipal: number;
+    cumulativeInterest: number;
+    requiredMinimumPayment: number;
+    totPaid: number;
+}
+
+type Summary = {
+    totalInterestPaid: number;
+    totalPrincipalPaid: number;
+    monthsToPayoff: number;
+    yearsToPayoff: number;
+    originalTotalInterestPaid: number;
+    apr: number;
+    monthlyPayment: number;
+    revisedDebtFreeDate: string;
+}
+
 
 // Import the JSON data
 import lifeEventData from '../knowledgebase/lifeEventsHairCuts.json';
 
 
-export const computeHairCutPercentage = (userData: UserData): {hairCutPercentage: number, lifeEvents: string[]} => {
+export const computeHairCutPercentage = (userData: UserData): { hairCutPercentage: number, lifeEvents: string[] } => {
     let hairCutPercentage = 0;
     let userLifeEvents: string[] = [];  // Initialize to empty array
 
@@ -60,7 +92,7 @@ export const computeHairCutPercentage = (userData: UserData): {hairCutPercentage
         userLifeEvents.push('Financially supporting extended family');
     }
 
-    return {hairCutPercentage: hairCutPercentage, lifeEvents: userLifeEvents};
+    return { hairCutPercentage: hairCutPercentage, lifeEvents: userLifeEvents };
 
 }
 
@@ -109,7 +141,7 @@ export const calculateTax = (income: number, filingStatus: 'single' | 'joint'): 
 
 
 
-export const calculateTotalAnnualIncome = (userData: UserData): {houseHoldAnnualIncome: number, spouseIncome: number} => {
+export const calculateTotalAnnualIncome = (userData: UserData): { houseHoldAnnualIncome: number, spouseIncome: number } => {
 
     console.log("userData is ", JSON.stringify(userData, null, 2))
     // annualSalary already includes user, spouse and partime too
@@ -206,7 +238,7 @@ export const calculateTotalAnnualIncome = (userData: UserData): {houseHoldAnnual
     }
 
 
-    return {houseHoldAnnualIncome: totalIncome, spouseIncome: spouseIncome} ;
+    return { houseHoldAnnualIncome: totalIncome, spouseIncome: spouseIncome };
 };
 
 
@@ -233,3 +265,71 @@ export const getSentimentLabel = (utilization: number, minPayment: number, dispo
         return "⚠️ Vulnerable";
     }
 }
+
+
+export const calculatePaymentSchedule = (values: any): any => {
+    let balance = values.principal;
+    const monthlyRate = (values.apr / 100) / 12;
+    const schedule: any[] = [];  // 🔧 you missed this
+    let month = 0;
+    let totalInterestPaid = 0;
+    let totalPrincipalPaid = 0;
+    let monthlyPayment = 0;
+
+    while (balance > 0) {
+        month++;
+        const startingBalance = balance;
+        const interest = balance * monthlyRate;
+        const requiredPrincipal = balance * (values.requiredPrincipalPercentage / 100);
+        const requiredMinimumPayment = Math.max(interest + requiredPrincipal, values.minimumPayment);
+
+        let payment = requiredMinimumPayment + values.additionalPayment;
+        payment = Math.min(payment, balance + interest);  // prevent overpaying final month
+
+        const principal = payment - interest;
+        balance -= principal;
+
+        const totPaid = payment;
+        totalInterestPaid += interest;
+        totalPrincipalPaid += principal;
+        monthlyPayment = payment;
+
+        const cumulativePrincipal = totalPrincipalPaid;
+        const cumulativeInterest = totalInterestPaid;
+
+        schedule.push({
+            month,
+            startingBalance: parseFloat(startingBalance.toFixed(2)),
+            balance: parseFloat(balance.toFixed(2)),
+            payment: parseFloat(payment.toFixed(2)),
+            principal: parseFloat(principal.toFixed(2)),
+            interest: parseFloat(interest.toFixed(2)),
+            cumulativePrincipal: parseFloat(cumulativePrincipal.toFixed(2)),
+            cumulativeInterest: parseFloat(cumulativeInterest.toFixed(2)),
+            requiredMinimumPayment: parseFloat(requiredMinimumPayment.toFixed(2)),
+            totPaid: parseFloat(totPaid.toFixed(2)),
+        });
+
+        if (month > 600) break;  // prevent infinite loops
+    }
+
+    const summary = {
+        totalInterestPaid: parseFloat(totalInterestPaid.toFixed(2)),
+        totalPrincipalPaid: parseFloat(totalPrincipalPaid.toFixed(2)),
+        monthsToPayoff: month,
+        yearsToPayoff: parseFloat((month / 12).toFixed(2)),
+        apr: values.apr,
+        monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
+        revisedDebtFreeDate: calculateDebtFreeDate(month),  // you must define this
+    };
+
+    return [schedule, summary];  // ✅ return both
+};
+
+
+function calculateDebtFreeDate(monthsToPayoff: number): string {
+    const today = new Date()
+    const debtFreeDate = new Date(today.setMonth(today.getMonth() + monthsToPayoff))
+    return debtFreeDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  }
+  

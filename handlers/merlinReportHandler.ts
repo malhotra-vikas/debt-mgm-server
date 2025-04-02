@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 // Importing the UserData interface if needed
 import { Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
-import { calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, getSentimentLabel } from "../lib/report-utils";
+import { calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, FormValues, getSentimentLabel } from "../lib/report-utils";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
@@ -73,6 +73,10 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     let aggregateCCDebt = reportData.debtCards.reduce((sum, card) => sum + card.balance, 0);
     let aggregateCCLimit = reportData.debtCards.reduce((sum, card) => sum + card.creditLimit, 0);
     let aggregateCCMinimumPayment = reportData.debtCards.reduce((sum, card) => sum + card.minPaymentDue, 0);
+    let aggregateCCInterestPayment = reportData.debtCards.reduce((sum, card) => sum + card.totalInterestPaid, 0);
+    const maxMonths = Math.max(...reportData.debtCards.map(card => card.payoffMonths));
+
+    const payoffSummary = `Based on your current balances and interest rates, paying only the minimum due will take approximately ${maxMonths} months to become debt-free. Over that time, you'll pay an estimated $${aggregateCCInterestPayment.toFixed(2)} in interest.`;
 
     let debtOverView = `You have an aggregate Credit Card Debt of $${aggregateCCDebt.toFixed(2)}. Your combined credit limit is $${aggregateCCLimit.toFixed(2)}.
             This puts you at a Credit Utilization bracket of ${(aggregateCCDebt / aggregateCCLimit * 100).toFixed(2)}%.
@@ -89,7 +93,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         userDisposableIncome
     );
 
-    const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView)
+    const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView, payoffSummary)
     console.log("aiSummary framed as ", aiSummary)
 
     const [para1, para2] = aiSummary.split("\n\n").length > 1
@@ -165,21 +169,22 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
                     <th>Interest</th>
                     <th>Minimum Payment Due</th>
                     <th>Payoff Time (Months)</th>
+                    <th>Total Interest Paid</th>
                 </tr>
                 ${reportData.debtCards.map((card: any) => `
                 <tr>
                     <td>${card.cardType}</td>
                     <td>$${card.balance.toFixed(2)}</td>
                     <td>${parseFloat(card.interest).toFixed(2)}</td>
-                    <td>$${card.minPaymentDue.toFixed(2)}</td>
-                    <td>Open Questions</td>
+                    <td>$${card.minPaymentDue}</td>
+                    <td>${card.payoffMonths}</td>
+                    <td>$${card.totalInterestPaid}</td>
                 </tr>
                 
                 `).join('')}
             </table>
-            <h2>Merlin Debt Sentiment Summary</h2>
 
-            <h3>Debt Sentiment: <span class="sentiment-label">${sentimentLabel}</span></h3>
+            <h3>Merlin Debt Sentiment Summary: <span class="sentiment-label">${sentimentLabel}</span></h3>
 
             <div class="ai-summary">
                 <p><em>${para1}</em></p>
@@ -288,15 +293,28 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             console.log("📌 Successfully computed User Life Events:", lifeEventsList);
 
             const enrichedCards = userData.data.userCards.map((card: any) => {
-                const interestRate = parseFloat(card.interest) || 0; // assume 0 if missing
+                const interestRate = parseFloat(card.interest) || 0;
                 const monthlyRate = interestRate / 100 / 12;
                 const minPaymentDue = (monthlyRate * card.balance) + (0.01 * card.balance);
-
+            
+                const formValues: FormValues = {
+                    principal: card.balance,
+                    apr: interestRate,
+                    minimumPayment: minPaymentDue,
+                    additionalPayment: 0, // assume no extra payment
+                    requiredPrincipalPercentage: 1 // 1% as per your logic
+                };
+            
+                const [_, summary] = calculatePaymentSchedule(formValues);
+            
                 return {
                     ...card,
-                    minPaymentDue: parseFloat(minPaymentDue.toFixed(2)) // add field
+                    minPaymentDue: parseFloat(minPaymentDue.toFixed(2)),
+                    payoffMonths: summary.monthsToPayoff,
+                    totalInterestPaid: summary.totalInterestPaid
                 };
-            });
+            });                    
+
 
             // Generate Pie Chart for Household Spending
             const chartBuffer = await generatePieChart();
@@ -349,14 +367,20 @@ const generateRecommendations = (userData: UserData): string => {
 
 export default merlinReportHandler;
 
-async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string) {
+async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string, payoffProjection: string) {
 
-    let effectivePrompt = `Use Debt Overview: ${debtOverView} and Disposable Income Overview: ${disposableIncomeOverView}.
-    Give me a 2 para summary on debt outlook. Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+    let effectivePrompt = `1. Credit Utilization & Limits: ${debtOverView}
+                            2. Disposable Income Situation: ${disposableIncomeOverView}
+                            3. Debt Payoff Projection: ${payoffProjection}.
+        Write a 2-paragraph personalized summary. 
+            - First paragraph: Describe their current debt burden and income gap.
+            - Second paragraph: Highlight debt outlook, expected payoff timeline and interest cost.
+        Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
 
     const chatMessages = [
         {
             role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
+            You're a financial advisor summarizing a user's credit health. 
             Your goal is to build a trust worthy and reliable debt management report for the users. 
             Your responses will be added to the report that is sent to the users  `
         },
