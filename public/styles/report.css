@@ -53,16 +53,17 @@ h2 {
 }
 
 h3 {
-    font-size: 18px;
-    margin-top: 20px;
+    font-size: 20px;
+    color: #2c3e50;
     margin-bottom: 10px;
-    color: #3498db;
 }
 
 p {
     line-height: 1.6;
     margin: 10px 0;
     text-align: justify;
+    font-size: 14px;
+    color: #333;
 }
 
 ul {
@@ -203,12 +204,21 @@ h3 {
 }
 
 .metrics {
+    display: flex;
+    gap: 40px; /* Space between the two metrics */
     margin-top: 20px;
+    justify-content: space-between;
 }
 
 .metric {
-    margin-bottom: 20px;
+    background-color: #f8f9fb;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    flex: 1; /* Make both metrics the same width */
 }
+
 
 .progress-bar {
     height: 10px;
@@ -227,6 +237,19 @@ h3 {
     height: 20px;
     border-radius: 50%;
     margin-top: 10px;
+}
+
+.utilization-meter-container, .payment-behavior-meter-container {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto;
+}
+
+.utilization-meter, .payment-behavior-meter {
+    transform: rotate(-90deg);
+    /* Rotating the meter so it starts from the top */
+    transition: stroke-dasharray 0.5s ease;
+    /* Smooth transition */
 }
 
 .green {
@@ -263,6 +286,7 @@ a:hover {
 
 .card-visual {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: space-between;
 }
@@ -272,9 +296,15 @@ a:hover {
     width: 150px;
 }
 
+.interest-bar-container {
+    position: relative;
+    width: 100%;
+    margin-top: 5px;
+}
+
 .interest-bar {
-    height: 20px;
-    background-color: #4CAF50;
+    height: 18px;
+    /* Thinner bar */
     position: relative;
     border-radius: 5px;
     flex-grow: 1;
@@ -287,7 +317,32 @@ a:hover {
     font-weight: bold;
 }
 
+.year-labels {
+    position: absolute;
+    top: -25px;
+    /* Position the labels above the bar */
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #333;
+    font-weight: bold;
+}
 
+.year-label.start {
+    text-align: left;
+}
+
+.year-label.end {
+    text-align: right;
+}
+
+.time-bar-label {
+    margin-top: 5px;
+    font-weight: bold;
+    color: #333;
+}
 
 /* Responsive for smaller screens */
 @media (max-width: 768px) {

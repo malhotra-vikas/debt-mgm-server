@@ -282,45 +282,95 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
         </table>
 
-        <!-- Visual Representation of Total Interest Paid for Each Card -->
-        <h3>How Much Time Will It Take to Pay Off Each Credit Card?</h3>
+        <div class="section page-break">
 
-        <div class="cards-visual">
-        ${reportData.debtCards.map(card => {
-            const maxInterestPaid = Math.max(...reportData.debtCards.map(c => c.totalInterestPaid));
-            const barWidth = (card.totalInterestPaid / maxInterestPaid) * 100;
+            <!-- Visual Representation of Total Interest Paid for Each Card -->
+            <h3>How Much Time Will It Take to Pay Off Each Credit Card?</h3>
+
+            <div class="cards-visual">
+            ${reportData.debtCards.map(card => {
+            const maxMonths = Math.max(...reportData.debtCards.map(c => c.payoffMonths));  // Get the max months to pay off
+            const barWidth = (card.payoffMonths / maxMonths) * 100;  // Calculate width based on months
+            const years = Math.floor(card.payoffMonths / 12);  // Convert months to years
+            const months = card.payoffMonths % 12;  // Get the remaining months
+
+            // Year Labels: Show only Year 1 at the start and Year N at the end
+            const yearLabels = `Year 1 | Year ${years}`;
+
+            // Color gradient or intensity based on totalInterestPaid
+            //const interestIntensity = Math.min((card.totalInterestPaid / Math.max(...reportData.debtCards.map(c => c.totalInterestPaid))) * 100, 100);
+            //            const barColor = `hsl(${120 - interestIntensity}, 100%, 40%)`; // Green to red gradient based on interest paid
+            const barColor = '#3498db'; // Blue color for the bar
+
             return `
-            <div class="card-visual">
-                <div class="card-label">${card.cardType}</div>
-                <div class="interest-bar" style="width: ${barWidth}%; background-color: #4CAF50;">
-                <span class="interest-amount">$${card.totalInterestPaid.toFixed(2)}</span>
+                <div class="card-visual">
+                    <div class="card-label">${card.cardType}</div>
+                    <div class="interest-bar-container">
+                    <div class="interest-bar" style="width: ${barWidth}%; background-color: ${barColor};">
+                        <span class="interest-amount">$${card.totalInterestPaid.toFixed(2)}</span>
+                    </div>
+                    <div class="year-labels">
+                        <span class="year-label start">${yearLabels.split(' | ')[0]}</span>
+                        <span class="year-label end" style="left: ${barWidth - 5}%;">${yearLabels.split(' | ')[1]}</span>
+                    </div>
+                    </div>
+                    <div class="time-bar-label">${years} years ${months} months</div>
                 </div>
-            </div>
-            `;
+                `;
         }).join('')}
         </div>
-                
 
-
-            <!-- New Sections -->
+        <!-- New Sections -->
     <div class="metrics">
+        <!-- Credit Card Utilization -->
         <div class="metric">
             <h3>Credit Card Utilization</h3>
-            <p>${creditCardUtilization.utilization}%</p>
-            <div class="progress-bar" style="width: ${creditCardUtilization.utilization}%"></div>
-            <p><a href="/learn-more#utilization">Learn more about credit card utilization</a></p>
+            <!-- Circular meter for utilization -->
+            <div class="utilization-meter-container">
+                <svg class="utilization-meter" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background circle -->
+                    <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="6" fill="none" />
+                    <!-- Foreground circle representing utilization -->
+                    <circle cx="50" cy="50" r="40" stroke="url(#grad)" stroke-width="6" fill="none" stroke-dasharray="${creditCardUtilization.utilization * 2.51}, 251" />
+                    <!-- Text in the center showing utilization percentage -->
+                    <!-- Gradient for color transition from green to red -->
+                    <defs>
+                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:green;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:red;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <!-- Percentage text under the meter -->
+            <div class="utilization-text">${creditCardUtilization.utilization.toFixed(1)}%</div>
+            <div class="utilization-text">Your Credit Card Utilization is : <span class="bold">${creditCardUtilization.utilizationLabel}</span></div>
         </div>
 
+        <!-- Payment Behavior (Dummy Metric) -->
         <div class="metric">
-            <h3>Card Payment Status</h3>
-            <p>${cardPaymentStatus.onTimePercentage}</p>
-            <div class="status-indicator ${cardPaymentStatus.paymentStatus === 'Good' ? 'green' : 'red'}"></div>
-            <p><a href="/learn-more#payment-status">Learn more about card payment status</a></p>
-        </div>
+            <h3>On Time Payment Behavior</h3>
+            <!-- Dummy circular meter for Payment Behavior -->
+            <div class="payment-behavior-meter-container">
+                <svg class="payment-behavior-meter" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background circle -->
+                    <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="6" fill="none" />
+                    <!-- Foreground circle representing payment behavior -->
+                    <circle cx="50" cy="50" r="40" stroke="url(#grad)" stroke-width="6" fill="none" stroke-dasharray="${cardPaymentStatus.onTimePercentage * 2.51}, 251" />
+                </svg>
+            </div>
+            <!-- Percentage text under the meter -->
+            <div class="utilization-text">${cardPaymentStatus.onTimePercentage.toFixed(1)}%</div>
+            <div class="utilization-text">Your Credit Card Payment is : <span class="bold">${cardPaymentStatus.paymentStatus}</span></div>
 
+        </div>
+    </div>
     </div>
 
-      </div>
+
+
+</div>
+
 
         <div class="section">
             <h2 class="section-title">Other Debt</h2>
@@ -365,8 +415,8 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     await page.setContent(content, { waitUntil: 'load' });
 
     const pdfPath = path.join(__dirname, `../uploads/${email}.pdf`);
-    await page.pdf({ 
-        path: pdfPath, 
+    await page.pdf({
+        path: pdfPath,
         format: 'A4',
         printBackground: true
     });
@@ -470,6 +520,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 return {
                     ...card,
                     minPaymentDue: parseFloat(minPaymentDue.toFixed(2)),
+                    payoffMonths: summary.payoffMonths,
                     yearsToPayoff: summary.yearsToPayoff,
                     totalInterestPaid: summary.totalInterestPaid,
                     debtFreeDate: summary.revisedDebtFreeDate
