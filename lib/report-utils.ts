@@ -1,3 +1,15 @@
+import { UserCard } from "../lib/UserData";  // Adjust this path as needed
+
+interface PaymentStatusCard {
+    status: 'On-Time' | '30 to 60 days late' | '61 to 90 days late' | '90+ days late' | 'Account Charged Off';
+}
+
+interface PaymentBehaviorCard {
+    balance: number; // Outstanding balance
+    paymentStatus: 'Minimum Payments' | 'More than Minimum' | 'Not Being Paid' | 'Account Charged Off';
+}
+
+
 type TaxBracket = {
     threshold: number;
     rate: number;
@@ -22,27 +34,25 @@ export type FormValues = {
 }
 
 type PaymentScheduleItem = {
-    month: number;
-    startingBalance: number;
-    balance: number;
-    payment: number;
-    principal: number;
-    interest: number;
-    cumulativePrincipal: number;
-    cumulativeInterest: number;
-    requiredMinimumPayment: number;
-    totPaid: number;
+    month: number
+    startingBalance: number
+    balance: number
+    payment: number
+    principal: number
+    interest: number
+    cumulativePrincipal: number
+    cumulativeInterest: number
+    requiredMinimumPayment: number
+    totPaid: number
 }
 
 type Summary = {
-    totalInterestPaid: number;
-    totalPrincipalPaid: number;
-    monthsToPayoff: number;
-    yearsToPayoff: number;
-    originalTotalInterestPaid: number;
-    apr: number;
-    monthlyPayment: number;
-    revisedDebtFreeDate: string;
+    totalInterestPaid: number
+    totalPrincipalPaid: number
+    payoffMonths: number
+    yearsToPayoff: number
+    monthlyPayment: number
+    revisedDebtFreeDate: string
 }
 
 
@@ -266,65 +276,45 @@ export const getSentimentLabel = (utilization: number, minPayment: number, dispo
     }
 }
 
-
-export const calculatePaymentSchedule = (values: any): any => {
-    let balance = values.principal;
-    const monthlyRate = (values.apr / 100) / 12;
-    const schedule: any[] = [];  // 🔧 you missed this
-    let month = 0;
-    let totalInterestPaid = 0;
-    let totalPrincipalPaid = 0;
+export function calculatePaymentSchedule(values: FormValues): [Summary] {
+    let balance = values.principal
+    const monthlyRate = (values.apr / 100) / 12
+    const schedule: PaymentScheduleItem[] = []
+    let month = 0
+    let totalInterestPaid = 0
+    let totalPrincipalPaid = 0
     let monthlyPayment = 0;
 
     while (balance > 0) {
-        month++;
-        const startingBalance = balance;
-        const interest = balance * monthlyRate;
-        const requiredPrincipal = balance * (values.requiredPrincipalPercentage / 100);
-        const requiredMinimumPayment = Math.max(interest + requiredPrincipal, values.minimumPayment);
-
-        let payment = requiredMinimumPayment + values.additionalPayment;
-        payment = Math.min(payment, balance + interest);  // prevent overpaying final month
-
-        const principal = payment - interest;
-        balance -= principal;
-
-        const totPaid = payment;
-        totalInterestPaid += interest;
-        totalPrincipalPaid += principal;
+        month++
+        const startingBalance = balance
+        const interest = balance * monthlyRate
+        const requiredPrincipal = balance * (values.requiredPrincipalPercentage / 100)
+        const requiredMinimumPayment = Math.max(interest + requiredPrincipal, values.minimumPayment)
+        let payment = Math.max(values.minimumPayment, interest + requiredPrincipal) + values.additionalPayment
+        payment = Math.min(payment, balance + interest)
+        const principal = payment - interest
+        balance -= principal
+        const totPaid = payment
+        totalInterestPaid += interest
+        totalPrincipalPaid += principal
         monthlyPayment = payment;
 
-        const cumulativePrincipal = totalPrincipalPaid;
-        const cumulativeInterest = totalInterestPaid;
-
-        schedule.push({
-            month,
-            startingBalance: parseFloat(startingBalance.toFixed(2)),
-            balance: parseFloat(balance.toFixed(2)),
-            payment: parseFloat(payment.toFixed(2)),
-            principal: parseFloat(principal.toFixed(2)),
-            interest: parseFloat(interest.toFixed(2)),
-            cumulativePrincipal: parseFloat(cumulativePrincipal.toFixed(2)),
-            cumulativeInterest: parseFloat(cumulativeInterest.toFixed(2)),
-            requiredMinimumPayment: parseFloat(requiredMinimumPayment.toFixed(2)),
-            totPaid: parseFloat(totPaid.toFixed(2)),
-        });
-
-        if (month > 600) break;  // prevent infinite loops
+        if (month > 600) break
     }
 
-    const summary = {
+    const summary: Summary = {
         totalInterestPaid: parseFloat(totalInterestPaid.toFixed(2)),
         totalPrincipalPaid: parseFloat(totalPrincipalPaid.toFixed(2)),
-        monthsToPayoff: month,
         yearsToPayoff: parseFloat((month / 12).toFixed(2)),
-        apr: values.apr,
-        monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
-        revisedDebtFreeDate: calculateDebtFreeDate(month),  // you must define this
-    };
+        payoffMonths: month,
+        monthlyPayment: monthlyPayment,
+        revisedDebtFreeDate: calculateDebtFreeDate(month)
+    }
 
-    return [schedule, summary];  // ✅ return both
-};
+    return [summary]
+}
+
 
 
 function calculateDebtFreeDate(monthsToPayoff: number): string {
@@ -344,4 +334,101 @@ export function emphasizeKeyPhrases(summary: string): string {
 
         // 📆 Time durations like "62 months" or "12.5 months"
         .replace(/\b\d+(\.\d+)?\s+(month|months|year|years)\b/gi, match => `<span class="bold">${match}</span>`);
+}
+
+
+export function calculateCreditCardUtilization(debtCards: UserCard[]) {
+    const totalBalance = debtCards.reduce((sum, card) => sum + card.balance, 0);
+    const totalCreditLimit = debtCards.reduce((sum, card) => sum + card.creditLimit, 0);
+
+    // Calculate utilization percentage
+    const utilization = (totalBalance / totalCreditLimit) * 100;
+
+    let utilizationLabel = "";
+    if (utilization <= 30) {
+        utilizationLabel = "Low";
+    } else if (utilization <= 49.99) {
+        utilizationLabel = "Moderate";
+    } else if (utilization <= 72.99) {
+        utilizationLabel = "High";
+    } else {
+        utilizationLabel = "Very High";
+    }
+
+    return { utilization, utilizationLabel };
+}
+
+
+export function calculateCardPaymentStatus(debtCards: UserCard[]) {
+    const totalCards = debtCards.length;
+
+    // Count occurrences of each status
+    const onTimeCount = debtCards.filter(card => card.paymentTimelyStatus === 'On-Time').length;
+    const late30To60Count = debtCards.filter(card => card.paymentTimelyStatus === '30 to 60 days late').length;
+    const late61To90Count = debtCards.filter(card => card.paymentTimelyStatus === '61 to 90 days late').length;
+    const late90PlusCount = debtCards.filter(card => card.paymentTimelyStatus === '90+ days late').length;
+    const chargedOffCount = debtCards.filter(card => card.paymentTimelyStatus === 'Account Charged Off').length;
+
+    const onTimePercentage = (onTimeCount / totalCards) * 100;
+    const concerningCondition = late61To90Count + late90PlusCount + chargedOffCount > 0;
+
+    let paymentStatus = "Good";
+
+    if (onTimePercentage < 65 || concerningCondition) {
+        paymentStatus = "Concerning";
+    }
+
+    if (onTimePercentage < 50 || late61To90Count + late90PlusCount + chargedOffCount > 1) {
+        paymentStatus = "Dire";
+    }
+
+    return { onTimePercentage, paymentStatus };
+}
+
+function calculateCardPaymentAmounts(debtCards: PaymentBehaviorCard[]) {
+    const totalBalance = debtCards.reduce((sum, card) => sum + card.balance, 0);
+
+    // Compute how much balance is serviced by each payment behavior
+    const minPaymentBalance = debtCards
+        .filter(card => card.paymentStatus === 'Minimum Payments')
+        .reduce((sum, card) => sum + card.balance, 0);
+
+    const moreThanMinPaymentBalance = debtCards
+        .filter(card => card.paymentStatus === 'More than Minimum')
+        .reduce((sum, card) => sum + card.balance, 0);
+
+    const notBeingPaidBalance = debtCards
+        .filter(card => card.paymentStatus === 'Not Being Paid')
+        .reduce((sum, card) => sum + card.balance, 0);
+
+    const chargedOffBalance = debtCards
+        .filter(card => card.paymentStatus === 'Account Charged Off')
+        .reduce((sum, card) => sum + card.balance, 0);
+
+    const minPaymentPercentage = (minPaymentBalance / totalBalance) * 100;
+    const moreThanMinPaymentPercentage = (moreThanMinPaymentBalance / totalBalance) * 100;
+    const notBeingPaidPercentage = (notBeingPaidBalance / totalBalance) * 100;
+    const chargedOffPercentage = (chargedOffBalance / totalBalance) * 100;
+
+    let paymentBehavior = "In great shape";
+
+    if (minPaymentPercentage >= 35 && minPaymentPercentage <= 66.99) {
+        paymentBehavior = "In good shape";
+    }
+
+    if (minPaymentPercentage >= 67) {
+        paymentBehavior = "Kicking the can down the road";
+    }
+
+    if (notBeingPaidPercentage >= 9.99 || chargedOffPercentage >= 1) {
+        paymentBehavior = "Have a serious situation brewing";
+    }
+
+    return {
+        minPaymentPercentage,
+        moreThanMinPaymentPercentage,
+        notBeingPaidPercentage,
+        chargedOffPercentage,
+        paymentBehavior
+    };
 }

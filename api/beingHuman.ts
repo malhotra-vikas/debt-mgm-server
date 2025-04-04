@@ -62,7 +62,7 @@ export async function askMerlinToCreateAHumanResponse(question: string, pastSele
         }
 
         const responseData = await response.json(); // Extract JSON response
-        console.log("askOpenAI - Parsed Response:", responseData);
+        //console.log("askOpenAI - Parsed Response:", responseData);
 
         // Extract AI response text safely
         const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
@@ -129,7 +129,7 @@ export async function generateOpenAIResponse(userQuery: string, knowledgeBase: s
         }
 
         const responseData = await response.json(); // Extract JSON response
-        console.log("askOpenAI - Parsed Response:", responseData);
+        //console.log("askOpenAI - Parsed Response:", responseData);
 
         // Extract AI response text safely
         const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
@@ -185,7 +185,7 @@ export async function classifyInput(input: string): Promise<string> {
         }
 
         const responseData = await response.json(); // Extract JSON response
-        console.log("askOpenAI - Parsed Response:", responseData);
+        //console.log("askOpenAI - Parsed Response:", responseData);
 
         // Extract AI response text safely
         const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
@@ -264,7 +264,7 @@ export async function askMerlinTrustBuilder(question: string, usercase: string, 
         }
 
         const responseData = await response.json(); // Extract JSON response
-        console.log("askOpenAI - Parsed Response:", responseData);
+       // console.log("askOpenAI - Parsed Response:", responseData);
 
         // Extract AI response text safely
         const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";

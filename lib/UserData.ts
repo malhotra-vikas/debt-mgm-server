@@ -3,6 +3,12 @@ export interface UserCardPurpose {
     purposeFrequency: string;
 }
 
+// Define the type for AI Narrative structure
+export interface AINarrative {
+    para1: string;
+    para2: string;
+    para3?: string
+}
 
 export interface UserCard {
     balance: number;
@@ -15,6 +21,8 @@ export interface UserCard {
     minPaymentDue: number;
     totalInterestPaid: number;
     payoffMonths: number;
+    yearsToPayoff: string;
+    debtFreeDate: string    
 }
 
 export interface UserDebt {

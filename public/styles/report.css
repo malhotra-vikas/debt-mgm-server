@@ -202,6 +202,59 @@ h3 {
     margin-bottom: 10px;
 }
 
+.metrics {
+    margin-top: 20px;
+}
+
+.metric {
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    background-color: #4caf50;
+    /* Change color based on the value */
+}
+
+.status-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-top: 10px;
+}
+
+.green {
+    background-color: green;
+}
+
+.red {
+    background-color: red;
+}
+
+.yellow {
+    background-color: yellow;
+}
+
+.orange {
+    background-color: orange;
+}
+
+a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
 /* Responsive for smaller screens */
 @media (max-width: 768px) {
     .container {

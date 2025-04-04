@@ -6,10 +6,15 @@ import axios from "axios";
 import dotenv from "dotenv";
 
 // Importing the UserData interface if needed
-import { Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
-import { calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, emphasizeKeyPhrases, FormValues, getSentimentLabel } from "../lib/report-utils";
+import { AINarrative, Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
+import { calculateCardPaymentStatus, calculateCreditCardUtilization, calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, emphasizeKeyPhrases, FormValues, getSentimentLabel } from "../lib/report-utils";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+
+const MERLIN_PERSONA = `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
+You're a financial advisor summarizing a user's credit health. 
+Your goal is to build a trust worthy and reliable debt management report for the users. 
+Your responses will be added to the report that is sent to the users`
 
 // Define Type for User Data
 interface UserData {
@@ -28,6 +33,8 @@ type ReportData = {
     lifeEventsList: string,
     debtCards: UserCard[]; // Assuming userCards is an array of UserCard objects
     chartBase64: string;
+    aiNarrativeHouseholdIncome: AINarrative;
+    aiNarrativeLifeEvents: AINarrative;
     //recommendations: string[]; // Assuming recommendations is an array of strings
 };
 
@@ -61,12 +68,12 @@ const generatePieChart = async (): Promise<Buffer> => {
 };
 
 const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): Promise<string> => {
-//    const browser = await puppeteer.launch();
+    //    const browser = await puppeteer.launch();
     const browser = await puppeteer.launch({
         headless: true, // or true for older versions
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      
+    });
+
     const page = await browser.newPage();
 
     // Get the current timestamp to append as a cache buster
@@ -80,6 +87,19 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     let aggregateCCMinimumPayment = reportData.debtCards.reduce((sum, card) => sum + card.minPaymentDue, 0);
     let aggregateCCInterestPayment = reportData.debtCards.reduce((sum, card) => sum + card.totalInterestPaid, 0);
     const maxMonths = Math.max(...reportData.debtCards.map(card => card.payoffMonths));
+    const maxDebtFreeDate = new Date(
+        Math.max(
+            ...reportData.debtCards.map(card => new Date(card.debtFreeDate).getTime())
+        )
+    );
+
+    // Find the card with the latest debt-free date
+    const latestCard = reportData.debtCards.find(card => new Date(card.debtFreeDate).getTime() === maxDebtFreeDate.getTime());
+    //console.log("Latest debt-free date:", maxDebtFreeDate);
+
+    const debtFreeDate = latestCard?.debtFreeDate
+    console.log("Max debt-free date:", debtFreeDate);
+
 
     const payoffSummary = `Based on your current balances and interest rates, paying only the minimum due will take approximately ${maxMonths} months to become debt-free. Over that time, you'll pay an estimated $${aggregateCCInterestPayment.toFixed(2)} in interest.`;
 
@@ -98,16 +118,24 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         userDisposableIncome
     );
 
-    const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView, payoffSummary)
-    console.log("aiSummary framed as ", aiSummary)
+    const creditCardUtilization = calculateCreditCardUtilization(reportData.debtCards)
+    console.log("creditCardUtilization framed as ", creditCardUtilization)
 
-    const [para1, para2] = aiSummary.split("\n\n").length > 1
-        ? aiSummary.split("\n\n")
-        : aiSummary.split(". ").reduce((acc: string[], sentence: string, idx: number) => {
-            if (idx < 2) acc[0] = (acc[0] || "") + sentence + ". ";
-            else acc[1] = (acc[1] || "") + sentence + ". ";
-            return acc;
-        }, []);
+    const cardPaymentStatus = calculateCardPaymentStatus(reportData.debtCards)
+    console.log("cardPaymentStatus framed as ", cardPaymentStatus)
+
+    /*
+        const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView, payoffSummary)
+        console.log("aiSummary framed as ", aiSummary)
+    
+        const [para1, para2] = aiSummary.split("\n\n").length > 1
+            ? aiSummary.split("\n\n")
+            : aiSummary.split(". ").reduce((acc: string[], sentence: string, idx: number) => {
+                if (idx < 2) acc[0] = (acc[0] || "") + sentence + ". ";
+                else acc[1] = (acc[1] || "") + sentence + ". ";
+                return acc;
+            }, []);
+    */
     // Define the HTML content for the PDF
     const content = `
 <html>
@@ -124,30 +152,78 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
       <h1>Merlin Assessment Report for ${reportData.firstName} ${reportData.lastName}</h1>
 
+            <!-- Income Section -->
+      <div class="section">
+        <h2 class="section-title">Introduction</h2>
+        <p>In the United States, average household spending generally breaks down into the following categories:</p>
+
+        <ul>
+        <li>Housing: 33%</li>
+        <li>Transportation: 17%</li>
+        <li>Food: 13%</li>
+        <li>Insurance & Pensions: 12%</li>
+        <li>Healthcare: 5%</li>
+        <li>Miscellaneous: 8%</li>
+        <li>Savings/Disposable: 12%</li>
+        </ul>
+         <p>The Saving/Disposable income is what you typically use to payoff your debts.</p>
+      </div>
+
       <!-- Income Section -->
       <div class="section">
         <h2 class="section-title">Household Income Analysis</h2>
+        <div class="ai-summary">
+          <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeHouseholdIncome.para1)}</em></p>
+          <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeHouseholdIncome.para2)}</em></p>
+        </div>
+
+        <p>This tables show how your monthly income is spread across the Expense Categories</p>
+
         <table>
-          <tr><th>Description</th><th>Amount</th></tr>
-          <tr><td>${reportData.firstName}'s Gross Annual Income</td><td>$${(reportData.houseHoldAnnualIncome - reportData.spouseAnnualSalary).toFixed(2)}</td></tr>
-          <tr><td>Spouse's Gross Annual Income</td><td>$${reportData.spouseAnnualSalary.toFixed(2)}</td></tr>
-          <tr><td>Gross Annual Household Income</td><td>$${reportData.houseHoldAnnualIncome.toFixed(2)}</td></tr>
+        <tr>
+            <th>Expense Category</th>
+            <th>Typical American Household Allocation Percentage</th>
+            <th>Your Monthly spend</th>
+
+        </tr>
+        ${[
+            { category: 'Housing', percentage: 33 },
+            { category: 'Transportation', percentage: 17 },
+            { category: 'Food', percentage: 13 },
+            { category: 'Insurance & Pensions', percentage: 12 },
+            { category: 'Healthcare', percentage: 5 },
+            { category: 'Miscellaneous', percentage: 8 },
+            { category: 'Savings/Disposable', percentage: 12 }
+        ].map(item => `
+            <tr>
+            <td>${item.category}</td>
+            <td>${item.percentage}%</td>
+            <td>$${(((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * item.percentage / 100).toFixed(0)}</td>
+            </tr>
+        `).join('')}
         </table>
-        <p>Your household income is subjected to approximately 
-          <span class="highlight">${(reportData.federalTaxes / reportData.houseHoldAnnualIncome * 100).toFixed(2)}%</span> in federal taxes, amounting to 
-          <span class="bold">$${reportData.federalTaxes.toFixed(2)}</span> in Annual Federal taxes</p>
-        <p>Your monthly after-tax income will be about 
-           <span class="bold">$${((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12).toFixed(2)}</span>.</p>
+
+
       </div>
 
       <!-- Life Events -->
       <div class="section">
         <h2 class="section-title">Life Events Analysis</h2>
-        <p>${reportData.firstName}, you mentioned experiencing the following life events:</p>
-        <ul>${reportData.lifeEventsList}</ul>
-        <p>As per our research, such events have a high impact on your available disposable income. We estimate your Disposable Income (also known as monthly income available 
-            for you to payoff your debts) to be <span class="highlight">$${userDisposableIncome} per month.</span>
-        </p>
+
+          <!-- Conditionally Render Life Events -->
+          <div class="ai-summary" id="lifeEventsAnalysis">
+            ${reportData.lifeEventsList && reportData.lifeEventsList.length > 0 ? `
+              <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeLifeEvents.para1)}</em></p>
+              <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeLifeEvents.para2)}</em></p>
+            ` : '<p>No life events data available.</p>'}
+          </div>
+
+ 
+<!--
+        <div class="chart-container">
+          <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Chart" width="400">
+        </div>
+-->        
       </div>
 
       <!-- Debt Overview -->
@@ -177,14 +253,16 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
       <!-- Payoff Outlook -->
       <div class="section">
-        <h2 class="section-title">Debt Free Outlook</h2>
+        <h2 class="section-title">Your Credit Card Outlook <span class="sentiment-label">${sentimentLabel}</span> </h2>
+        <p>Assuming you are paying the Minimum Monthly Payments</p>
+
         <table>
           <tr>
             <th>Card Type</th>
             <th>Balance</th>
             <th>Interest</th>
-            <th>Minimum Payment Due</th>
-            <th>Payoff Time (Months)</th>
+            <th>Minimum Monthly Payment</th>
+            <th>Years to Payoff</th>
             <th>Total Interest Paid</th>
           </tr>
           ${reportData.debtCards.map(card => `
@@ -193,17 +271,45 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
               <td>$${card.balance.toFixed(2)}</td>
               <td>${card.interest}%</td>
               <td>$${card.minPaymentDue.toFixed(2)}</td>
-              <td>${card.payoffMonths}</td>
+              <td>${card.yearsToPayoff}</td>
               <td>$${card.totalInterestPaid.toFixed(2)}</td>
             </tr>
           `).join('')}
+
+            <!-- Total Row -->
+            <tr style="font-weight: bold;">
+            <td>Total</td>
+            <td>$${reportData.debtCards.reduce((sum, card) => sum + card.balance, 0).toFixed(2)}</td>
+            <td></td>
+            <td>$${reportData.debtCards.reduce((sum, card) => sum + card.minPaymentDue, 0).toFixed(2)}</td>
+            <td></td>
+            <td>$${reportData.debtCards.reduce((sum, card) => sum + card.totalInterestPaid, 0).toFixed(2)}</td>
+            </tr>
+
         </table>
 
-        <h3>Merlin Debt Sentiment: <span class="sentiment-label">${sentimentLabel}</span></h3>
+            <!-- New Sections -->
+    <div class="metrics">
+        <div class="metric">
+            <h3>Credit Card Utilization</h3>
+            <p>${creditCardUtilization.utilization}%</p>
+            <div class="progress-bar" style="width: ${creditCardUtilization.utilization}%"></div>
+            <p><a href="/learn-more#utilization">Learn more about credit card utilization</a></p>
+        </div>
+
+        <div class="metric">
+            <h3>Card Payment Status</h3>
+            <p>${cardPaymentStatus.onTimePercentage}</p>
+            <div class="status-indicator ${cardPaymentStatus.paymentStatus === 'Good' ? 'green' : 'red'}"></div>
+            <p><a href="/learn-more#payment-status">Learn more about card payment status</a></p>
+        </div>
+
+    </div>
 
         <div class="ai-summary">
-          <p><em>${emphasizeKeyPhrases(para1)}</em></p>
-          <p><em>${emphasizeKeyPhrases(para2)}</em></p>
+          <p><em>As per Merlin's assessment, if you do not make any changes, you will be Debt Free Date on <span class="highlight">${debtFreeDate}</span>. 
+          If you would like to take control and be debt free earlier, please read through the report for our recomendations and next steps.</em></p>
+
         </div>
       </div>
 
@@ -232,13 +338,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         </div>    
         
         
-      <!-- Visual Chart -->
-      <div class="section">
-        <h2 class="section-title">Household Spending Breakdown</h2>
-        <div class="chart-container">
-          <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Chart" width="400">
-        </div>
-      </div>
+
 
       <!-- Footer -->
       <footer>
@@ -287,6 +387,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             }
 
             console.log("📌 Successfully fetched user data for Email:", email);
+            let userName = userData.data.personFirstName
 
             let annualIncomes = calculateTotalAnnualIncome(userData);
             let houseHoldAnnualIncome = annualIncomes.houseHoldAnnualIncome
@@ -313,14 +414,23 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
 
             console.log(`📌 Successfully computed After Taxes income. Annual: ${afterTaxAnnualIncome} and Monthly: ${afterTaxMonthlyIncome}`);
 
+            const aiNarrativeHouseholdIncome = await buildAiNarrativeHouseholdIncome(userName, houseHoldAnnualIncome, spouseAnnualSalary, federalTaxes, estimateTaxBracket, afterTaxAnnualIncome, afterTaxMonthlyIncome)
+            console.log(`📌 Successfully computed aiNarrativeHouseholdIncome: ${aiNarrativeHouseholdIncome} `);
+
+
             let userEventsAndImppact = computeHairCutPercentage(userData);
             let incomeHairCutPercentage = userEventsAndImppact.hairCutPercentage
             let userLifeEvents = userEventsAndImppact.lifeEvents
+            let originalDisposableIncome = ((houseHoldAnnualIncome - federalTaxes) / 12) * (12) / 100
+            let userDisposableIncome = ((houseHoldAnnualIncome - federalTaxes) / 12) * (12 + incomeHairCutPercentage) / 100
 
             const lifeEventsList = userLifeEvents
                 .filter(event => event !== '') // Remove any empty strings
                 .map(event => `<li>${event}</li>`) // Format each life event as a list item
                 .join(''); // Join all list items into a single string
+
+            const aiNarrativeLifeEvents = await buildAiNarrativeLiveEvents(userName, lifeEventsList, originalDisposableIncome, userDisposableIncome)
+            //console.log(`📌 Successfully computed buildAiNarrativeLiveEvents: ${buildAiNarrativeLiveEvents} `);
 
             console.log("📌 Successfully computed Income Hair Cut due to Life Events:", incomeHairCutPercentage);
             console.log("📌 Successfully computed User Life Events:", lifeEventsList);
@@ -333,18 +443,21 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 const formValues: FormValues = {
                     principal: card.balance,
                     apr: interestRate,
-                    minimumPayment: minPaymentDue,
+                    minimumPayment: 40,
                     additionalPayment: 0, // assume no extra payment
                     requiredPrincipalPercentage: 1 // 1% as per your logic
                 };
 
-                const [_, summary] = calculatePaymentSchedule(formValues);
+                const [summary] = calculatePaymentSchedule(formValues);
+
+                console.log("summary came back as ", summary)
 
                 return {
                     ...card,
                     minPaymentDue: parseFloat(minPaymentDue.toFixed(2)),
-                    payoffMonths: summary.monthsToPayoff,
-                    totalInterestPaid: summary.totalInterestPaid
+                    yearsToPayoff: summary.yearsToPayoff,
+                    totalInterestPaid: summary.totalInterestPaid,
+                    debtFreeDate: summary.revisedDebtFreeDate
                 };
             });
 
@@ -352,6 +465,7 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             // Generate Pie Chart for Household Spending
             const chartBuffer = await generatePieChart();
             const chartBase64 = chartBuffer.toString('base64'); // Convert the chart to base64
+
 
             // Preparing data for the report
             const reportData: ReportData = {
@@ -365,6 +479,8 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 incomeHairCutPercentage,
                 debtCards: enrichedCards,
                 chartBase64,
+                aiNarrativeHouseholdIncome,
+                aiNarrativeLifeEvents
                 //recommendations: generateRecommendations(userData)
             };
 
@@ -400,22 +516,11 @@ const generateRecommendations = (userData: UserData): string => {
 
 export default merlinReportHandler;
 
-async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string, payoffProjection: string) {
-
-    let effectivePrompt = `1. Credit Utilization & Limits: ${debtOverView}
-                            2. Disposable Income Situation: ${disposableIncomeOverView}
-                            3. Debt Payoff Projection: ${payoffProjection}.
-        Write a 2-paragraph personalized summary. 
-            - First paragraph: Describe their current debt burden and income gap.
-            - Second paragraph: Highlight debt outlook, expected payoff timeline and interest cost.
-        Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+async function runMerlinAI(effectivePrompt: string) {
 
     const chatMessages = [
         {
-            role: "system", content: `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
-            You're a financial advisor summarizing a user's credit health. 
-            Your goal is to build a trust worthy and reliable debt management report for the users. 
-            Your responses will be added to the report that is sent to the users  `
+            role: "system", content: MERLIN_PERSONA
         },
         { role: "user", content: effectivePrompt }
     ];
@@ -442,7 +547,7 @@ async function buildAiSummary(debtOverView: string, disposableIncomeOverView: st
         }
 
         const responseData = await response.json(); // Extract JSON response
-        console.log("askOpenAI - Parsed Response:", responseData);
+        //console.log("askOpenAI - Parsed Response:", responseData);
 
         // Extract AI response text safely
         const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
@@ -459,6 +564,91 @@ async function buildAiSummary(debtOverView: string, disposableIncomeOverView: st
         }
         return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
     }
+}
+async function buildAiNarrativeLiveEvents(userName: any, lifeEventsList: string, originalDisposableIncome: number, userDisposableIncome: number) {
+    let effectivePrompt = `Here is what we know about the User's Live Events 
+    Life Events: ${lifeEventsList}
+    Monthly Disposible Income to pay of debts (In case of users with no challanging Life Events): ${originalDisposableIncome}
+    Available Monthly Disposable Income to pay off debts (After taking into consideration user's personal Life Events ): ${userDisposableIncome}
+
+    Write a 2-paragraph personalized summary to give user an over view of their available Monthly Disposable Income to pay off debts. 
+    Each para should not be more than 20 word each. Capture how their personal life events impact and reduce this. 
+    DO NOT refer to the life events as we do not want user to relive these as they read this summary. 
+    Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+
+    const aiNarrative = await runMerlinAI(effectivePrompt)
+
+    // Split the response into paragraphs based on a double newline
+    let splitNarrative = aiNarrative.split("\n\n");
+
+    // Fallback in case of fewer than 3 paragraphs after split
+    if (splitNarrative.length < 3) {
+        splitNarrative = aiNarrative.split(". ").reduce((acc: { para1: string, para2: string, para3?: string }, sentence: string, idx: number) => {
+            if (idx < 3) acc.para1 = (acc.para1 || "") + sentence + ". "; // Add to first paragraph
+            else if (idx < 6) acc.para2 = (acc.para2 || "") + sentence + ". "; // Add to second paragraph
+            else acc.para3 = (acc.para3 || "") + sentence + ". "; // Add to third paragraph
+            return acc;
+        }, { para1: "", para2: "" });
+    }
+
+    // If splitIncomeNarrative is not yet in three paragraphs, forcefully assign them
+    const { para1 = "", para2 = "", para3 = "" } = splitNarrative.length >= 3
+        ? { para1: splitNarrative[0], para2: splitNarrative[1], para3: splitNarrative[2] }
+        : splitNarrative;
+
+    // Return the paragraphs
+    return { para1, para2, para3: para3 || undefined }; // Return para3 as undefined if it's empty
+
+
+}
+async function buildAiNarrativeHouseholdIncome(userName: string, houseHoldAnnualIncome: number, spouseAnnualSalary: number, federalTaxes: number, estimateTaxBracket: number, afterTaxAnnualIncome: number, afterTaxMonthlyIncome: number) {
+
+    let effectivePrompt = `Here is what we know about the User's income 
+    User Name: ${userName}
+    Spouse Income: ${spouseAnnualSalary}
+    HouseHold Annual Income: ${houseHoldAnnualIncome}
+    Estimated Federal Taxes: ${federalTaxes}
+    Estimated Federal Tax Bracket: ${estimateTaxBracket}
+    After Tax Annual Income: ${afterTaxAnnualIncome}
+    After Tax Monthly Income: ${afterTaxMonthlyIncome}
+
+Write a 2-paragraph personalized summary to give user an over view of their Income. 
+Each para should not be more than 20 word each. Capture how much spouse and the user brings. How Taxes impacts this income. And how much do they have each month. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+
+    const aiNarrativeHouseholdIncome = await runMerlinAI(effectivePrompt)
+
+    // Split the response into paragraphs based on a double newline
+    let splitIncomeNarrative = aiNarrativeHouseholdIncome.split("\n\n");
+
+    // Fallback in case of no paragraphs after split
+    if (splitIncomeNarrative.length <= 1) {
+        splitIncomeNarrative = aiNarrativeHouseholdIncome.split(". ").reduce((acc: { para1: string, para2: string }, sentence: string, idx: number) => {
+            if (idx < 2) acc.para1 = (acc.para1 || "") + sentence + ". ";
+            else acc.para2 = (acc.para2 || "") + sentence + ". ";
+            return acc;
+        }, { para1: "", para2: "" });
+    }
+
+    // If splitIncomeNarrative is not yet in two paragraphs, forcefully assign them
+    const { para1 = "", para2 = "" } = splitIncomeNarrative.length > 1 ? { para1: splitIncomeNarrative[0], para2: splitIncomeNarrative[1] } : splitIncomeNarrative;
+
+    return { para1, para2 };
+}
+
+
+
+async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string, payoffProjection: string) {
+
+    let effectivePrompt = `1. Credit Utilization & Limits: ${debtOverView}
+                            2. Disposable Income Situation: ${disposableIncomeOverView}
+                            3. Debt Payoff Projection: ${payoffProjection}.
+        Write a 2-paragraph personalized summary. 
+            - First paragraph: Describe their current debt burden and income gap.
+            - Second paragraph: Highlight debt outlook, expected payoff timeline and interest cost.
+        Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+
+
+    return runMerlinAI(effectivePrompt)
 
 }
 
