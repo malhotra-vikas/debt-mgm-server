@@ -166,7 +166,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         <li>Miscellaneous: 8%</li>
         <li>Savings/Disposable: 12%</li>
         </ul>
-         <p>The Saving/Disposable income is what you typically use to payoff your debts.</p>
+         <p>The Saving/Disposable income is what you typically use to pay-off your debts.</p>
       </div>
 
       <!-- Income Section -->
@@ -216,18 +216,11 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
               <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeLifeEvents.para1)}</em></p>
               <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeLifeEvents.para2)}</em></p>
             ` : '<p>No life events data available.</p>'}
-          </div>
-
- 
-<!--
-        <div class="chart-container">
-          <img src="data:image/png;base64,${reportData.chartBase64}" alt="Spending Chart" width="400">
-        </div>
--->        
+          </div>    
       </div>
 
       <!-- Debt Overview -->
-      <div class="section page-break">
+      <div class="section">
         <h2 class="section-title">Debt Analysis</h2>
         <table>
           <tr>
@@ -254,7 +247,8 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
       <!-- Payoff Outlook -->
       <div class="section">
         <h2 class="section-title">Your Credit Card Outlook <span class="sentiment-label">${sentimentLabel}</span> </h2>
-        <p>Assuming you are paying the Minimum Monthly Payments</p>
+        <p>Assuming you are paying the Minimum Monthly Payments, you will be Debt Free Date on <span class="highlight">${debtFreeDate}</span>. 
+          If you would like to take control and be debt free earlier, please read through the report for our recomendations and next steps. </p>
 
         <table>
           <tr>
@@ -262,7 +256,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
             <th>Balance</th>
             <th>Interest</th>
             <th>Minimum Monthly Payment</th>
-            <th>Years to Payoff</th>
+            <th>Years to Pay-off</th>
             <th>Total Interest Paid</th>
           </tr>
           ${reportData.debtCards.map(card => `
@@ -288,6 +282,26 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
         </table>
 
+        <!-- Visual Representation of Total Interest Paid for Each Card -->
+        <h3>How Much Time Will It Take to Pay Off Each Credit Card?</h3>
+
+        <div class="cards-visual">
+        ${reportData.debtCards.map(card => {
+            const maxInterestPaid = Math.max(...reportData.debtCards.map(c => c.totalInterestPaid));
+            const barWidth = (card.totalInterestPaid / maxInterestPaid) * 100;
+            return `
+            <div class="card-visual">
+                <div class="card-label">${card.cardType}</div>
+                <div class="interest-bar" style="width: ${barWidth}%; background-color: #4CAF50;">
+                <span class="interest-amount">$${card.totalInterestPaid.toFixed(2)}</span>
+                </div>
+            </div>
+            `;
+        }).join('')}
+        </div>
+                
+
+
             <!-- New Sections -->
     <div class="metrics">
         <div class="metric">
@@ -306,11 +320,6 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
     </div>
 
-        <div class="ai-summary">
-          <p><em>As per Merlin's assessment, if you do not make any changes, you will be Debt Free Date on <span class="highlight">${debtFreeDate}</span>. 
-          If you would like to take control and be debt free earlier, please read through the report for our recomendations and next steps.</em></p>
-
-        </div>
       </div>
 
         <div class="section">
@@ -352,9 +361,15 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     `;
 
     // Set the content and generate the PDF
-    await page.setContent(content);
+    //await page.setContent(content);
+    await page.setContent(content, { waitUntil: 'load' });
+
     const pdfPath = path.join(__dirname, `../uploads/${email}.pdf`);
-    await page.pdf({ path: pdfPath, format: 'A4' });
+    await page.pdf({ 
+        path: pdfPath, 
+        format: 'A4',
+        printBackground: true
+    });
 
     await browser.close();
 
@@ -635,20 +650,4 @@ Each para should not be more than 20 word each. Capture how much spouse and the 
     return { para1, para2 };
 }
 
-
-
-async function buildAiSummary(debtOverView: string, disposableIncomeOverView: string, payoffProjection: string) {
-
-    let effectivePrompt = `1. Credit Utilization & Limits: ${debtOverView}
-                            2. Disposable Income Situation: ${disposableIncomeOverView}
-                            3. Debt Payoff Projection: ${payoffProjection}.
-        Write a 2-paragraph personalized summary. 
-            - First paragraph: Describe their current debt burden and income gap.
-            - Second paragraph: Highlight debt outlook, expected payoff timeline and interest cost.
-        Each para should be no more than 40 word each. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
-
-
-    return runMerlinAI(effectivePrompt)
-
-}
 

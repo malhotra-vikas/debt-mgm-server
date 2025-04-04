@@ -254,6 +254,40 @@ a:hover {
     text-decoration: underline;
 }
 
+.cards-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.card-visual {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-label {
+    font-weight: bold;
+    width: 150px;
+}
+
+.interest-bar {
+    height: 20px;
+    background-color: #4CAF50;
+    position: relative;
+    border-radius: 5px;
+    flex-grow: 1;
+}
+
+.interest-amount {
+    position: absolute;
+    right: 10px;
+    color: white;
+    font-weight: bold;
+}
+
+
 
 /* Responsive for smaller screens */
 @media (max-width: 768px) {
