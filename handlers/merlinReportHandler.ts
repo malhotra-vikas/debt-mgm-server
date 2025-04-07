@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 // Importing the UserData interface if needed
 import { AINarrative, Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
-import { calculateCardPaymentStatus, calculateCreditCardUtilization, calculatePaymentSchedule, calculateTax, calculateTotalAnnualIncome, computeHairCutPercentage, emphasizeKeyPhrases, FormValues, getSentimentLabel } from "../lib/report-utils";
+import { calculateCardPaymentAmounts, calculateCardPaymentStatus, calculateCreditCardUtilization, calculatePaymentSchedule, calculateTax, calculateAllIncomesForUserHousehold, computeHairCutPercentage, emphasizeKeyPhrases, FormValues, getSentimentLabel } from "../lib/report-utils";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
@@ -22,9 +22,42 @@ interface UserData {
     data: any;
 }
 
+export interface IncomeDetails {
+    houseHoldAnnualIncome: number;
+    spouseAnnualIncome: number;
+    userAnnualIncome: number;
+    socialSecurityMonthly: number;
+    socialSecurityEndDate: string;
+
+    unemploymentMonthly: number;
+    unemploymentEndDate: string;
+
+    childSupportMonthly: number;
+    childSupportEndDate: string;
+
+    workerCompMonthly: number;
+    workerCompEndDate: string;
+
+    disabilityMonthly: number;
+    disabilityEndDate: string;
+
+    severanceMonthly: number;
+    severanceEndDate: string;
+
+    alimonyMonthly: number;
+    alimonyEndDate: string;
+
+    retirementMonthly: number;
+    userRetirementEndDate: string;
+
+    partTimeMonthly: number;
+    consultingMonthly: number;
+}
+
 type ReportData = {
     email: string;
     firstName: string;
+    fetchAllIncomeForHousehold: IncomeDetails,
     lastName: string;
     houseHoldAnnualIncome: number;
     spouseAnnualSalary: number;
@@ -124,23 +157,15 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
     const cardPaymentStatus = calculateCardPaymentStatus(reportData.debtCards)
     console.log("cardPaymentStatus framed as ", cardPaymentStatus)
 
-    /*
-        const aiSummary = await buildAiSummary(debtOverView, disposableIncomeOverView, payoffSummary)
-        console.log("aiSummary framed as ", aiSummary)
-    
-        const [para1, para2] = aiSummary.split("\n\n").length > 1
-            ? aiSummary.split("\n\n")
-            : aiSummary.split(". ").reduce((acc: string[], sentence: string, idx: number) => {
-                if (idx < 2) acc[0] = (acc[0] || "") + sentence + ". ";
-                else acc[1] = (acc[1] || "") + sentence + ". ";
-                return acc;
-            }, []);
-    */
+    const cardPaymentAmount = calculateCardPaymentAmounts(reportData.debtCards)
+    console.log("cardPaymentAmount framed as ", cardPaymentAmount)
+
     // Define the HTML content for the PDF
     const content = `
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="http://${process.env.HOST}:${process.env.PORT}/styles/report.css?timestamp=${Date.now()}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <!-- Logo Header -->
@@ -154,7 +179,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
             <!-- Income Section -->
       <div class="section">
-        <h2 class="section-title">Introduction</h2>
+        <h2 class="section-title">Here is what we know</h2>
         <p>In the United States, average household spending generally breaks down into the following categories:</p>
 
         <ul>
@@ -171,13 +196,54 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
       <!-- Income Section -->
       <div class="section">
-        <h2 class="section-title">Household Income Analysis</h2>
+        <h2 class="section-title">Your Household Income</h2>
         <div class="ai-summary">
+          <p>${reportData.firstName}, Your annual household income is <span clas="bold">$${reportData.fetchAllIncomeForHousehold.houseHoldAnnualIncome}</span>. This equates to a monthly income of <span clas="bold">$${(reportData.fetchAllIncomeForHousehold.houseHoldAnnualIncome / 12).toFixed(2)}</span> before taxes.</p>
+
+          <p> As per the information Merlin gathered with you, here are your income sources.
+            <ul>
+            <!-- Iterate over income sources and display only those that are non-zero -->
+            ${Object.entries(reportData.fetchAllIncomeForHousehold).map(([key, value]) => {
+        // Skip 'houseHoldAnnualIncome' because it's already displayed above
+        if (key === 'houseHoldAnnualIncome' || value === 0 || key.endsWith('EndDate')) return ''; // Skip zero and the main income, and "End Date" keys
+
+        // Customize the label for 'userAnnualIncome'
+        let label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()); // Convert camelCase to space-separated words and capitalize
+        if (key === 'userAnnualIncome') {
+            label = 'Your Annual Income'; // Replace 'User Annual Income' with 'Your Annual Income'
+        }
+
+        // Extract end date from the income source (e.g., for socialSecurity, check for socialSecurityEndDate)
+        let endDate = null;
+        if (key === 'socialSecurityMonthly') endDate = reportData.fetchAllIncomeForHousehold.socialSecurityEndDate;
+        else if (key === 'childSupportMonthly') endDate = reportData.fetchAllIncomeForHousehold.childSupportEndDate;
+        else if (key === 'workerCompMonthly') endDate = reportData.fetchAllIncomeForHousehold.workerCompEndDate;
+        else if (key === 'disabilityMonthly') endDate = reportData.fetchAllIncomeForHousehold.disabilityEndDate;
+        else if (key === 'severanceMonthly') endDate = reportData.fetchAllIncomeForHousehold.severanceEndDate;
+        else if (key === 'alimonyMonthly') endDate = reportData.fetchAllIncomeForHousehold.alimonyEndDate;
+        else if (key === 'userRetirementMonthly') endDate = reportData.fetchAllIncomeForHousehold.userRetirementEndDate;
+
+        // If there is an end date, format and append it; if no valid end date, don't show the "Ending mm/dd/yyyy"
+        let endDateLabel = '';
+        if (endDate && new Date(endDate) > new Date()) {
+            const formattedEndDate = new Date(endDate).toLocaleDateString('en-US'); // Format the end date as mm/dd/yyyy
+            endDateLabel = `: Ending ${formattedEndDate}`;
+        }
+
+        // Add "Ending dd/mm/yy" only for income sources that have an end date
+        if (endDateLabel) {
+            label = `${label}${endDateLabel}`;
+        }
+
+        return `<li>${label}: $${value}</li>`;
+    }).join('')}
+            </ul>
+
+
           <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeHouseholdIncome.para1)}</em></p>
-          <p><em>${emphasizeKeyPhrases(reportData.aiNarrativeHouseholdIncome.para2)}</em></p>
         </div>
 
-        <p>This tables show how your monthly income is spread across the Expense Categories</p>
+        <p>Based on national average, this is how Merlin has estimated your household budget</p>
 
         <table>
         <tr>
@@ -203,6 +269,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
         `).join('')}
         </table>
 
+        <p>Applying the national average of Saving/ Disposable income Merlin has estimated that you have about $${(((reportData.houseHoldAnnualIncome - reportData.federalTaxes) / 12) * 12 / 100).toFixed(0)} of Disposable income in your household</p>
 
       </div>
 
@@ -221,21 +288,21 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
       <!-- Debt Overview -->
       <div class="section">
-        <h2 class="section-title">Debt Analysis</h2>
+        <h2 class="section-title">Credit Card Details</h2>
         <table>
           <tr>
             <th>Card Type</th>
             <th>Balance</th>
-            <th>Utilization</th>
+            <th>Interest Rate</th>
             <th>Payment Status</th>
-            <th>Payment Type</th>
-            <th>Card Status</th>
+            <th>Typical Payment</th>
+            <th>Current Behavior</th>
           </tr>
           ${reportData.debtCards.map(card => `
             <tr>
               <td>${card.cardType}</td>
               <td>$${card.balance.toFixed(2)}</td>
-              <td>${(card.balance / card.creditLimit * 100).toFixed(2)}%</td>
+              <td>${card.interest}%</td>
               <td>${card.paymentTimelyStatus}</td>
               <td>${card.monthlyPaymentType}</td>
               <td>${card.cardUseStatus}</td>
@@ -246,9 +313,83 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
 
       <!-- Payoff Outlook -->
       <div class="section">
-        <h2 class="section-title">Your Credit Card Outlook <span class="sentiment-label">${sentimentLabel}</span> </h2>
-        <p>Assuming you are paying the Minimum Monthly Payments, you will be Debt Free Date on <span class="highlight">${debtFreeDate}</span>. 
-          If you would like to take control and be debt free earlier, please read through the report for our recomendations and next steps. </p>
+        <h2 class="section-title">Your Debt Analysis</h2>
+        <p>Based on your Credit Card Details, we estimate your Minimum Monthly Payment for each card to be:</p>
+
+        <ul>
+        <li>EACH CARD: $minimim monthly payment</li>
+        <li>Total across all your cards: $minimim monthly payment</li>
+        </ul>
+
+
+        <p>Based on your Card Balances and Credit Limits, here are the Utilization for each card:</p>
+
+        <ul>
+        <li>EACH CARD: Unitization Percentage % : Utilization FLag</li>
+        </ul>
+
+            <div class="metrics">
+        <!-- Credit Card Utilization -->
+        <div class="metric">
+            <h3>Credit Card Utilization</h3>
+            <!-- Circular meter for utilization -->
+            <div class="utilization-meter-container">
+                <svg class="utilization-meter" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background circle -->
+                    <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="6" fill="none" />
+                    <!-- Foreground circle representing utilization -->
+                    <circle cx="50" cy="50" r="40" stroke="url(#grad)" stroke-width="6" fill="none" stroke-dasharray="${creditCardUtilization.utilization * 2.51}, 251" />
+                    <!-- Text in the center showing utilization percentage -->
+                    <!-- Gradient for color transition from green to red -->
+                    <defs>
+                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:green;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:red;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <!-- Percentage text under the meter -->
+            <div class="utilization-text">${creditCardUtilization.utilization.toFixed(1)}%</div>
+            <div class="utilization-text">Your Credit Card Utilization is : <span class="bold">${creditCardUtilization.utilizationLabel}</span></div>
+        </div>
+
+    </div>
+
+        <p>Assuming you only make minimum monthly payments on your Credit Cards, this is what Merlin estimates the time to payoff each card
+
+            <div class="cards-visual">
+            ${reportData.debtCards.map(card => {
+            const maxMonths = Math.max(...reportData.debtCards.map(c => c.payoffMonths));  // Get the max months to pay off
+            const barWidth = (card.payoffMonths / maxMonths) * 100;  // Calculate width based on months
+            const years = Math.floor(card.payoffMonths / 12);  // Convert months to years
+            const months = card.payoffMonths % 12;  // Get the remaining months
+
+            // Year Labels: Show only Year 1 at the start and Year N at the end
+            const yearLabels = `Year 1`;
+
+            // Color gradient or intensity based on totalInterestPaid
+            //const interestIntensity = Math.min((card.totalInterestPaid / Math.max(...reportData.debtCards.map(c => c.totalInterestPaid))) * 100, 100);
+            //            const barColor = `hsl(${120 - interestIntensity}, 100%, 40%)`; // Green to red gradient based on interest paid
+            const barColor = '#3498db'; // Blue color for the bar
+
+            return `
+                <div class="card-visual">
+                    <div class="card-label">${card.cardType}</div>
+                    <div class="interest-bar-container">
+                    <div class="interest-bar" style="width: ${barWidth}%; background-color: ${barColor};">
+                        <span class="interest-amount"></span>
+                    </div>
+                    <div class="year-labels">
+                        <span class="year-label start">${yearLabels.split(' | ')[0]}</span>
+                    </div>
+                    </div>
+                    <div class="time-bar-label">${years} years ${months} months</div>
+                </div>
+                `;
+        }).join('')}
+        </div>
+
 
         <table>
           <tr>
@@ -281,92 +422,6 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
             </tr>
 
         </table>
-
-        <div class="section page-break">
-
-            <!-- Visual Representation of Total Interest Paid for Each Card -->
-            <h3>How Much Time Will It Take to Pay Off Each Credit Card?</h3>
-
-            <div class="cards-visual">
-            ${reportData.debtCards.map(card => {
-            const maxMonths = Math.max(...reportData.debtCards.map(c => c.payoffMonths));  // Get the max months to pay off
-            const barWidth = (card.payoffMonths / maxMonths) * 100;  // Calculate width based on months
-            const years = Math.floor(card.payoffMonths / 12);  // Convert months to years
-            const months = card.payoffMonths % 12;  // Get the remaining months
-
-            // Year Labels: Show only Year 1 at the start and Year N at the end
-            const yearLabels = `Year 1 | Year ${years}`;
-
-            // Color gradient or intensity based on totalInterestPaid
-            //const interestIntensity = Math.min((card.totalInterestPaid / Math.max(...reportData.debtCards.map(c => c.totalInterestPaid))) * 100, 100);
-            //            const barColor = `hsl(${120 - interestIntensity}, 100%, 40%)`; // Green to red gradient based on interest paid
-            const barColor = '#3498db'; // Blue color for the bar
-
-            return `
-                <div class="card-visual">
-                    <div class="card-label">${card.cardType}</div>
-                    <div class="interest-bar-container">
-                    <div class="interest-bar" style="width: ${barWidth}%; background-color: ${barColor};">
-                        <span class="interest-amount">$${card.totalInterestPaid.toFixed(2)}</span>
-                    </div>
-                    <div class="year-labels">
-                        <span class="year-label start">${yearLabels.split(' | ')[0]}</span>
-                        <span class="year-label end" style="left: ${barWidth - 5}%;">${yearLabels.split(' | ')[1]}</span>
-                    </div>
-                    </div>
-                    <div class="time-bar-label">${years} years ${months} months</div>
-                </div>
-                `;
-        }).join('')}
-        </div>
-
-        <!-- New Sections -->
-    <div class="metrics">
-        <!-- Credit Card Utilization -->
-        <div class="metric">
-            <h3>Credit Card Utilization</h3>
-            <!-- Circular meter for utilization -->
-            <div class="utilization-meter-container">
-                <svg class="utilization-meter" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Background circle -->
-                    <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="6" fill="none" />
-                    <!-- Foreground circle representing utilization -->
-                    <circle cx="50" cy="50" r="40" stroke="url(#grad)" stroke-width="6" fill="none" stroke-dasharray="${creditCardUtilization.utilization * 2.51}, 251" />
-                    <!-- Text in the center showing utilization percentage -->
-                    <!-- Gradient for color transition from green to red -->
-                    <defs>
-                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:green;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:red;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-            </div>
-            <!-- Percentage text under the meter -->
-            <div class="utilization-text">${creditCardUtilization.utilization.toFixed(1)}%</div>
-            <div class="utilization-text">Your Credit Card Utilization is : <span class="bold">${creditCardUtilization.utilizationLabel}</span></div>
-        </div>
-
-        <!-- Payment Behavior (Dummy Metric) -->
-        <div class="metric">
-            <h3>On Time Payment Behavior</h3>
-            <!-- Dummy circular meter for Payment Behavior -->
-            <div class="payment-behavior-meter-container">
-                <svg class="payment-behavior-meter" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Background circle -->
-                    <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="6" fill="none" />
-                    <!-- Foreground circle representing payment behavior -->
-                    <circle cx="50" cy="50" r="40" stroke="url(#grad)" stroke-width="6" fill="none" stroke-dasharray="${cardPaymentStatus.onTimePercentage * 2.51}, 251" />
-                </svg>
-            </div>
-            <!-- Percentage text under the meter -->
-            <div class="utilization-text">${cardPaymentStatus.onTimePercentage.toFixed(1)}%</div>
-            <div class="utilization-text">Your Credit Card Payment is : <span class="bold">${cardPaymentStatus.paymentStatus}</span></div>
-
-        </div>
-    </div>
-    </div>
-
 
 
 </div>
@@ -454,9 +509,14 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             console.log("📌 Successfully fetched user data for Email:", email);
             let userName = userData.data.personFirstName
 
-            let annualIncomes = calculateTotalAnnualIncome(userData);
-            let houseHoldAnnualIncome = annualIncomes.houseHoldAnnualIncome
-            let spouseAnnualSalary = annualIncomes.spouseIncome
+            let fetchAllIncomeForHousehold = calculateAllIncomesForUserHousehold(userData);
+
+            console.log("fetchAllIncomeForHousehold os ", fetchAllIncomeForHousehold)
+
+
+            let houseHoldAnnualIncome = fetchAllIncomeForHousehold.houseHoldAnnualIncome
+            let spouseAnnualSalary = fetchAllIncomeForHousehold.spouseAnnualIncome
+            let userAnnualSalary = fetchAllIncomeForHousehold.userAnnualIncome
 
             console.log("📌 Successfully computed Annual Household Income :", houseHoldAnnualIncome);
             console.log("📌 Successfully computed Annual Spouse Income :", spouseAnnualSalary);
@@ -536,8 +596,10 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             // Preparing data for the report
             const reportData: ReportData = {
                 email,
-                firstName: userData.data.personFirstName,
-                lastName: userData.data.personLastName,
+                fetchAllIncomeForHousehold,
+                // Capitalizing the first letter of the firstName
+                firstName: userData.data.personFirstName.charAt(0).toUpperCase() + userData.data.personFirstName.slice(1),
+                lastName: userData.data.personLastName.charAt(0).toUpperCase() + userData.data.personLastName.slice(1),
                 houseHoldAnnualIncome,
                 spouseAnnualSalary,
                 federalTaxes,
@@ -671,15 +733,16 @@ async function buildAiNarrativeHouseholdIncome(userName: string, houseHoldAnnual
 
     let effectivePrompt = `Here is what we know about the User's income 
     User Name: ${userName}
-    Spouse Income: ${spouseAnnualSalary}
     HouseHold Annual Income: ${houseHoldAnnualIncome}
     Estimated Federal Taxes: ${federalTaxes}
     Estimated Federal Tax Bracket: ${estimateTaxBracket}
     After Tax Annual Income: ${afterTaxAnnualIncome}
     After Tax Monthly Income: ${afterTaxMonthlyIncome}
 
-Write a 2-paragraph personalized summary to give user an over view of their Income. 
-Each para should not be more than 20 word each. Capture how much spouse and the user brings. How Taxes impacts this income. And how much do they have each month. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
+Write a 1-paragraph personalized summary to give user an over view of their Income after federal taxes. 
+The para should not be more than 25 words. 
+Capture how Taxes impacts the household income. Share how much are federal taxes and what bracket the user falls into. 
+Share how much do they have each month. Do not use superlatives. Make it sound like a human and not a machine or AI bot`
 
     const aiNarrativeHouseholdIncome = await runMerlinAI(effectivePrompt)
 

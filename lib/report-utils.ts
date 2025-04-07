@@ -58,6 +58,7 @@ type Summary = {
 
 // Import the JSON data
 import lifeEventData from '../knowledgebase/lifeEventsHairCuts.json';
+import { IncomeDetails } from "../handlers/merlinReportHandler";
 
 
 export const computeHairCutPercentage = (userData: UserData): { hairCutPercentage: number, lifeEvents: string[] } => {
@@ -148,107 +149,86 @@ export const calculateTax = (income: number, filingStatus: 'single' | 'joint'): 
     return taxAmount;
 }
 
+export const calculateAllIncomesForUserHousehold = (userData: UserData): IncomeDetails => {
 
+    console.log("userData is ", JSON.stringify(userData, null, 2));
 
-
-export const calculateTotalAnnualIncome = (userData: UserData): { houseHoldAnnualIncome: number, spouseIncome: number } => {
-
-    console.log("userData is ", JSON.stringify(userData, null, 2))
-    // annualSalary already includes user, spouse and partime too
-    let totalIncome = parseFloat(userData.data.annualSalary); // Base annual salary
+    // Initialize base annual income
+    let annualIncome = 0;
     let spouseIncome = parseFloat(userData.data.spouseAnnualSalary);
+    let userIncome = parseFloat(userData.data.userAnnualSalary);
+    let partTimeMonthlyIncome = parseFloat(userData.data.partTimeMonthly);
+    let consultingMonthlyIncome = parseFloat(userData.data.consultingMonthly);
 
+    // Add spouse and user income to annual income
+    annualIncome += spouseIncome;
+    annualIncome += userIncome;
 
-    // Alimony, check if it's provided and active
-    if (userData.data.alimonyMonthly) {
-        let alimonyMonthly = parseFloat(userData.data.alimonyMonthly);
-        // If alimony end date exists, calculate how many months it will be paid
-        const alimonyMonths = userData.data.alimonyEndDate ? monthsUntilEnd(userData.data.alimonyEndDate) : 12;
-        totalIncome += alimonyMonthly * alimonyMonths;
-    }
+    // Add part-time and consulting income to annual income
+    annualIncome += partTimeMonthlyIncome * 12;
+    annualIncome += consultingMonthlyIncome * 12;
 
-    // Retirement benefits (monthly)
-    if (userData.data.userRetirementMonthly) {
-        console.log("userData.data.retirementMonthly is ", userData.data.userRetirementMonthly)
-        console.log("userData.data.retirementEndDate is ", userData.data.userRetirementEndDate)
+    // Get current date
+    const currentDate = new Date();
 
-        // If the retirement end date is missing or empty, assume it lasts for the full year (12 months)
-        const retirementMonths = userData.data.userRetirementEndDate && userData.data.userRetirementEndDate !== ""
-            ? monthsUntilEnd(userData.data.userRetirementEndDate)  // Calculate months until the end date
-            : 12; // Default to 12 months if end date is not provided or empty
+    // Initialize monthly income variables
+    let retirementMonthly = 0, alimonyMonthly = 0, severanceMonthly = 0, disabilityMonthly = 0;
+    let workerCompMonthly = 0, childSupportMonthly = 0, unemploymentMonthly = 0, socialSecurityMonthly = 0;
 
-        //const retirementMonths = userData.data.userRetirementMonthly ? monthsUntilEnd(userData.data.userRetirementEndDate) : 12;
-        console.log("retirementMonths is ", retirementMonths)
+    // Helper function to check and add income if it is active
+    const checkAndAddIncome = (incomeSource: string, endDate: string | null, monthlyIncome: number) => {
+        if (monthlyIncome && endDate) {
+            let endDateParsed = new Date(endDate);
+            if (endDateParsed > currentDate) {
+                annualIncome += (monthlyIncome * 12)
+                return monthlyIncome;
+            }
+        }
+        return 0;
+    };
 
-        totalIncome += parseFloat(userData.data.userRetirementMonthly) * retirementMonths;
-    }
+    // Add income from different sources if still active
+    retirementMonthly += checkAndAddIncome(userData.data.userRetirementMonthly, userData.data.userRetirementEndDate, parseFloat(userData.data.userRetirementMonthly));
+    alimonyMonthly += checkAndAddIncome(userData.data.alimonyMonthly, userData.data.alimonyEndDate, parseFloat(userData.data.alimonyMonthly));
+    severanceMonthly += checkAndAddIncome(userData.data.severanceMonthly, userData.data.severanceEndDate, parseFloat(userData.data.severanceMonthly));
+    disabilityMonthly += checkAndAddIncome(userData.data.disabilityMonthly, userData.data.disabilityEndDate, parseFloat(userData.data.disabilityMonthly));
+    workerCompMonthly += checkAndAddIncome(userData.data.workerCompMonthly, userData.data.workerCompEndDate, parseFloat(userData.data.workerCompMonthly));
+    childSupportMonthly += checkAndAddIncome(userData.data.childSupportMonthly, userData.data.childSupportEndDate, parseFloat(userData.data.childSupportMonthly));
+    unemploymentMonthly += checkAndAddIncome(userData.data.unemploymentMonthly, userData.data.unemploymentEndDate, parseFloat(userData.data.unemploymentMonthly));
+    socialSecurityMonthly += checkAndAddIncome(userData.data.socialSecurityMonthly, userData.data.socialSecurityEndDate, parseFloat(userData.data.socialSecurityMonthly));
 
+    // Return all income sources and the total annual income
+    return {
+        houseHoldAnnualIncome: annualIncome,
+        spouseAnnualIncome: spouseIncome,
+        userAnnualIncome: userIncome,
+        socialSecurityMonthly: socialSecurityMonthly,
+        socialSecurityEndDate: userData.data.socialSecurityEndDate,
 
-    // Alimony
-    if (userData.data.alimonyMonthly) {
-        let alimonyMonthly = parseFloat(userData.data.alimonyMonthly);
-        const alimonyMonths = userData.data.alimonyEndDate && userData.data.alimonyEndDate !== ""
-            ? monthsUntilEnd(userData.data.alimonyEndDate)
-            : 12; // Default to 12 months if end date is not provided
-        totalIncome += alimonyMonthly * alimonyMonths;
-    }
+        unemploymentMonthly: unemploymentMonthly,
+        unemploymentEndDate: userData.data.unemploymentEndDate,
 
-    // Severance
-    if (userData.data.severanceMonthly) {
-        let severanceMonthly = parseFloat(userData.data.severanceMonthly);
-        const severanceMonths = userData.data.severanceEndDate && userData.data.severanceEndDate !== ""
-            ? monthsUntilEnd(userData.data.severanceEndDate)
-            : 12;
-        totalIncome += severanceMonthly * severanceMonths;
-    }
+        childSupportMonthly: childSupportMonthly,
+        childSupportEndDate: userData.data.childSupportEndDate,
+        
+        workerCompMonthly: workerCompMonthly,
+        workerCompEndDate: userData.data.workerCompEndDate,
 
-    // Disability
-    if (userData.data.disabilityMonthly) {
-        let disabilityMonthly = parseFloat(userData.data.disabilityMonthly);
-        const disabilityMonths = userData.data.disabilityEndDate && userData.data.disabilityEndDate !== ""
-            ? monthsUntilEnd(userData.data.disabilityEndDate)
-            : 12;
-        totalIncome += disabilityMonthly * disabilityMonths;
-    }
+        disabilityMonthly: disabilityMonthly,
+        disabilityEndDate: userData.data.disabilityEndDate,
 
-    // Worker Compensation
-    if (userData.data.workerCompMonthly) {
-        let workerCompMonthly = parseFloat(userData.data.workerCompMonthly);
-        const workerCompMonths = userData.data.workerCompEndDate && userData.data.workerCompEndDate !== ""
-            ? monthsUntilEnd(userData.data.workerCompEndDate)
-            : 12;
-        totalIncome += workerCompMonthly * workerCompMonths;
-    }
+        severanceMonthly: severanceMonthly,
+        severanceEndDate: userData.data.severanceEndDate,
 
-    // Child Support
-    if (userData.data.childSupportMonthly) {
-        let childSupportMonthly = parseFloat(userData.data.childSupportMonthly);
-        const childSupportMonths = userData.data.childSupportEndDate && userData.data.childSupportEndDate !== ""
-            ? monthsUntilEnd(userData.data.childSupportEndDate)
-            : 12;
-        totalIncome += childSupportMonthly * childSupportMonths;
-    }
+        alimonyMonthly: alimonyMonthly,
+        alimonyEndDate: userData.data.alimonyEndDate,
 
-    // Unemployment
-    if (userData.data.unemploymentMonthly) {
-        let unemploymentMonthly = parseFloat(userData.data.unemploymentMonthly);
-        const unemploymentMonths = userData.data.unemploymentEndDate && userData.data.unemploymentEndDate !== ""
-            ? monthsUntilEnd(userData.data.unemploymentEndDate)
-            : 12;
-        totalIncome += unemploymentMonthly * unemploymentMonths;
-    }
-
-    // Social Security
-    if (userData.data.socialSecurityMonthly) {
-        let socialSecurityMonthly = parseFloat(userData.data.socialSecurityMonthly);
-        const socialSecurityMonths = userData.data.socialSecurityEndDate && userData.data.socialSecurityEndDate !== ""
-            ? monthsUntilEnd(userData.data.socialSecurityEndDate)
-            : 12;
-        totalIncome += socialSecurityMonthly * socialSecurityMonths;
-    }
-
-
-    return { houseHoldAnnualIncome: totalIncome, spouseIncome: spouseIncome };
+        retirementMonthly: retirementMonthly,
+        userRetirementEndDate: userData.data.userRetirementEndDate,
+        
+        partTimeMonthly: partTimeMonthlyIncome,  // Added partTimeMonthly
+        consultingMonthly: consultingMonthlyIncome  // Added consultingMonthly
+    };
 };
 
 
@@ -385,25 +365,31 @@ export function calculateCardPaymentStatus(debtCards: UserCard[]) {
     return { onTimePercentage, paymentStatus };
 }
 
-function calculateCardPaymentAmounts(debtCards: PaymentBehaviorCard[]) {
+export function calculateCardPaymentAmounts(debtCards: UserCard[]) {
     const totalBalance = debtCards.reduce((sum, card) => sum + card.balance, 0);
 
     // Compute how much balance is serviced by each payment behavior
     const minPaymentBalance = debtCards
-        .filter(card => card.paymentStatus === 'Minimum Payments')
+        .filter(card => card.monthlyPaymentType === 'Minimum Required')  // Change condition here
         .reduce((sum, card) => sum + card.balance, 0);
 
     const moreThanMinPaymentBalance = debtCards
-        .filter(card => card.paymentStatus === 'More than Minimum')
+        .filter(card => card.monthlyPaymentType === 'More Than Minimum')
         .reduce((sum, card) => sum + card.balance, 0);
 
     const notBeingPaidBalance = debtCards
-        .filter(card => card.paymentStatus === 'Not Being Paid')
+        .filter(card => card.monthlyPaymentType === 'Not Being Paid') // If no matching data, adjust accordingly
         .reduce((sum, card) => sum + card.balance, 0);
 
     const chargedOffBalance = debtCards
-        .filter(card => card.paymentStatus === 'Account Charged Off')
+        .filter(card => card.monthlyPaymentType === 'Account Charged Off') // Adjust if necessary
         .reduce((sum, card) => sum + card.balance, 0);
+
+    console.log("totalBalance - ", totalBalance)
+    console.log("minPaymentBalance - ", minPaymentBalance)
+    console.log("moreThanMinPaymentBalance - ", moreThanMinPaymentBalance)
+    console.log("notBeingPaidBalance - ", notBeingPaidBalance)
+    console.log("chargedOffBalance - ", chargedOffBalance)
 
     const minPaymentPercentage = (minPaymentBalance / totalBalance) * 100;
     const moreThanMinPaymentPercentage = (moreThanMinPaymentBalance / totalBalance) * 100;
