@@ -6,7 +6,40 @@ body {
     background-color: #f4f4f4;
     color: #333;
     line-height: 1.6;
-    font-size: 14px;
+    font-size: 16px;
+}
+
+.recommendation {
+    background-color: #eaf4ff;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.summary {
+    background-color: #f4e6e6;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.factors-list {
+    margin-left: 20px;
+}
+
+.factors-list li {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.final-note {
+    background-color: #dff0d8;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+.factors-list li span {
+    font-weight: bold;
+    color: #34495e;
 }
 
 .header {
@@ -19,6 +52,7 @@ body {
     width: 160px;
     height: auto;
 }
+
 
 /* Container for all content */
 .container {
@@ -69,6 +103,7 @@ p {
 ul {
     margin: 10px 0;
     padding-left: 20px;
+    list-style-type: disc;
 }
 
 li {
@@ -95,6 +130,52 @@ td {
 
 tr:nth-child(even) td {
     background-color: #f7f9fc;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Actionable Steps Section */
+.actionable-steps {
+    background-color: #f8f9fa;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+
+.actionable-steps ul {
+    list-style-type: square;
+    margin-left: 20px;
+}
+
+.actionable-steps h3 {
+    font-size: 1.4em;
+    margin-bottom: 10px;
+}
+
+/* Two-column Layout for long text sections */
+.two-column-layout {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.two-column-layout>div {
+    width: 48%;
+    margin-right: 4%;
+    padding: 10px;
+}
+
+/* Clearfix for the columns */
+.two-column-layout::after {
+    content: '';
+    display: table;
+    clear: both;
 }
 
 th {
@@ -191,7 +272,6 @@ h3 {
 
 .ai-summary {
     background-color: #f9f9f9;
-    font-style: italic;
 }
 
 .sentiment-label {
@@ -205,7 +285,8 @@ h3 {
 
 .metrics {
     display: flex;
-    gap: 40px; /* Space between the two metrics */
+    gap: 40px;
+    /* Space between the two metrics */
     margin-top: 20px;
     justify-content: space-between;
 }
@@ -216,7 +297,8 @@ h3 {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    flex: 1; /* Make both metrics the same width */
+    flex: 1;
+    /* Make both metrics the same width */
 }
 
 
@@ -239,13 +321,15 @@ h3 {
     margin-top: 10px;
 }
 
-.utilization-meter-container, .payment-behavior-meter-container {
+.utilization-meter-container,
+.payment-behavior-meter-container {
     position: relative;
     display: inline-block;
     margin: 0 auto;
 }
 
-.utilization-meter, .payment-behavior-meter {
+.utilization-meter,
+.payment-behavior-meter {
     transform: rotate(-90deg);
     /* Rotating the meter so it starts from the top */
     transition: stroke-dasharray 0.5s ease;

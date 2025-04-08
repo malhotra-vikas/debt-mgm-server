@@ -210,7 +210,7 @@ export const calculateAllIncomesForUserHousehold = (userData: UserData): IncomeD
 
         childSupportMonthly: childSupportMonthly,
         childSupportEndDate: userData.data.childSupportEndDate,
-        
+
         workerCompMonthly: workerCompMonthly,
         workerCompEndDate: userData.data.workerCompEndDate,
 
@@ -225,7 +225,7 @@ export const calculateAllIncomesForUserHousehold = (userData: UserData): IncomeD
 
         retirementMonthly: retirementMonthly,
         userRetirementEndDate: userData.data.userRetirementEndDate,
-        
+
         partTimeMonthly: partTimeMonthlyIncome,  // Added partTimeMonthly
         consultingMonthly: consultingMonthlyIncome  // Added consultingMonthly
     };
@@ -313,30 +313,62 @@ export function emphasizeKeyPhrases(summary: string): string {
         .replace(/\d{1,3}(\.\d+)?%/g, match => `<span class="bold">${match}</span>`)
 
         // 📆 Time durations like "62 months" or "12.5 months"
-        .replace(/\b\d+(\.\d+)?\s+(month|months|year|years)\b/gi, match => `<span class="bold">${match}</span>`);
+        .replace(/\b\d+(\.\d+)?\s+(month|months|year|years)\b/gi, match => `<span class="bold">${match}</span>`)
+
+        // 🔑 Key financial phrases like "Debt Relief", "Restructuring", "Forgiveness"
+        .replace(/\b(Debt Relief|Restructuring|Forgiveness|Bankruptcy|Credit Score|Credit Card|Interest Rate|Consolidation|Loan Modification|Debt Settlement)\b/gi, match => `<span class="bold">${match}</span>`);
 }
 
 
 export function calculateCreditCardUtilization(debtCards: UserCard[]) {
+    // Calculate total balance and total credit limit
     const totalBalance = debtCards.reduce((sum, card) => sum + card.balance, 0);
     const totalCreditLimit = debtCards.reduce((sum, card) => sum + card.creditLimit, 0);
 
-    // Calculate utilization percentage
-    const utilization = (totalBalance / totalCreditLimit) * 100;
+    // Calculate total utilization percentage
+    const totalUtilization = (totalBalance / totalCreditLimit) * 100;
 
-    let utilizationLabel = "";
-    if (utilization <= 30) {
-        utilizationLabel = "Low";
-    } else if (utilization <= 49.99) {
-        utilizationLabel = "Moderate";
-    } else if (utilization <= 72.99) {
-        utilizationLabel = "High";
+    // Calculate utilization for each card
+    const cardUtilizations = debtCards.map(card => {
+        const cardUtilization = (card.balance / card.creditLimit) * 100;
+
+        let utilizationLabel = "";
+        if (cardUtilization <= 30) {
+            utilizationLabel = "Low";
+        } else if (cardUtilization <= 49.99) {
+            utilizationLabel = "Moderate";
+        } else if (cardUtilization <= 72.99) {
+            utilizationLabel = "High";
+        } else {
+            utilizationLabel = "Very High";
+        }
+
+        return {
+            cardType: card.cardType, // Assuming 'cardType' is available in the UserCard type
+            utilization: cardUtilization,
+            utilizationLabel: utilizationLabel
+        };
+    });
+
+    // Calculate total utilization label
+    let totalUtilizationLabel = "";
+    if (totalUtilization <= 30) {
+        totalUtilizationLabel = "Low";
+    } else if (totalUtilization <= 49.99) {
+        totalUtilizationLabel = "Moderate";
+    } else if (totalUtilization <= 72.99) {
+        totalUtilizationLabel = "High";
     } else {
-        utilizationLabel = "Very High";
+        totalUtilizationLabel = "Very High";
     }
 
-    return { utilization, utilizationLabel };
+    return {
+        cardUtilizations, // Array of utilization for each card
+        totalUtilization, // Total utilization percentage
+        totalUtilizationLabel // Total utilization label
+    };
 }
+
 
 
 export function calculateCardPaymentStatus(debtCards: UserCard[]) {
@@ -362,7 +394,32 @@ export function calculateCardPaymentStatus(debtCards: UserCard[]) {
         paymentStatus = "Dire";
     }
 
-    return { onTimePercentage, paymentStatus };
+    // Map each card to its status
+    const cardPaymentStatuses = debtCards.map(card => {
+        let cardStatus = "Good";
+
+        if (card.paymentTimelyStatus === 'On-Time') {
+            cardStatus = "Good";
+        } else if (card.paymentTimelyStatus === '30 to 60 days late') {
+            cardStatus = "Concerning";
+        } else if (card.paymentTimelyStatus === '61 to 90 days late' || card.paymentTimelyStatus === '90+ days late') {
+            cardStatus = "Dire";
+        } else if (card.paymentTimelyStatus === 'Account Charged Off') {
+            cardStatus = "Dire";
+        }
+
+        return {
+            cardType: card.cardType, // Assuming 'cardType' exists on UserCard type
+            paymentStatus: cardStatus,
+            paymentTimelyStatus: card.paymentTimelyStatus
+        };
+    });
+
+    return {
+        cardPaymentStatuses, // Array of card-level payment statuses
+        onTimePercentage, // Percentage of cards with "On-Time" status
+        paymentStatus // Overall payment status
+    };
 }
 
 export function calculateCardPaymentAmounts(debtCards: UserCard[]) {
@@ -385,11 +442,11 @@ export function calculateCardPaymentAmounts(debtCards: UserCard[]) {
         .filter(card => card.monthlyPaymentType === 'Account Charged Off') // Adjust if necessary
         .reduce((sum, card) => sum + card.balance, 0);
 
-    console.log("totalBalance - ", totalBalance)
-    console.log("minPaymentBalance - ", minPaymentBalance)
-    console.log("moreThanMinPaymentBalance - ", moreThanMinPaymentBalance)
-    console.log("notBeingPaidBalance - ", notBeingPaidBalance)
-    console.log("chargedOffBalance - ", chargedOffBalance)
+    //console.log("totalBalance - ", totalBalance)
+    //console.log("minPaymentBalance - ", minPaymentBalance)
+    //console.log("moreThanMinPaymentBalance - ", moreThanMinPaymentBalance)
+    //console.log("notBeingPaidBalance - ", notBeingPaidBalance)
+    //console.log("chargedOffBalance - ", chargedOffBalance)
 
     const minPaymentPercentage = (minPaymentBalance / totalBalance) * 100;
     const moreThanMinPaymentPercentage = (moreThanMinPaymentBalance / totalBalance) * 100;
