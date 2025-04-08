@@ -707,6 +707,7 @@ ${reportData.totalOtherDebt}                        </li>
         printBackground: true
     });
 
+    console.log("pdfPath is ", pdfPath)
     await browser.close();
 
     return pdfPath;
