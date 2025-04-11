@@ -20,7 +20,7 @@ interface Sponsor {
     SERVICE_TERM: number;
     DEBT_AMT_ENROLLED: number;
     DRAFTS: number;
-    SETTLEMENTS_REACHED: number;
+    SETTLEMENTS_REACHED: string;
 }
 
 // Function to read CSV
