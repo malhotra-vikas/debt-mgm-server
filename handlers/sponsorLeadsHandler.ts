@@ -209,3 +209,31 @@ export const deleteSponsorLeads = async (filePath: string) => {
         client.release();
     }
 };
+
+
+export const fetchLeadByClientId = async (clientId: string) => {
+    const client = await pool.connect(); // Get a client from the pool
+    try {
+        // Use parameterized queries to prevent SQL injection
+        const result = await client.query(
+            `SELECT sponsor_name, client_first, client_last, client_zip, client_email, client_mobile,
+                    client_state, client_dob, client_id, processor_acct, client_status, affiliate_enrolled_date, 
+                    service_term, debt_amt_enrolled 
+             FROM sponsorsdata WHERE client_id = $1`, [clientId]
+        );
+
+        // Check if any results were returned
+        if (result.rows.length > 0) {
+            // Return the entire rows data (or an array of rows)
+            return result.rows;  // Returns all rows as an array
+        } else {
+            console.log(`No client found with client_id: ${clientId}`);
+            return []; // Return an empty array if no data is found
+        }
+    } catch (error) {
+        console.error("Invite error:", error);
+        throw new Error("Failed to fetch lead data");  // Throw error if there's an issue
+    } finally {
+        client.release(); // Always release the client back to the pool
+    }
+};

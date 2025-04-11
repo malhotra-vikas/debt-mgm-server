@@ -16,6 +16,7 @@ import {
     deleteSponsorLeads,
     addNewSponsor,
     getAllSponsors,
+    fetchLeadByClientId,
 } from "./handlers/sponsorLeadsHandler"; // Import your new CSV processing functions
 import merlinSideChatsHandler from "./handlers/merlinSideChatsHandler";
 import merlinIntentHandler from "./handlers/merlinIntentHandler";
@@ -162,6 +163,35 @@ app.get("/get-all-sponsors", async (req: Request, res: Response): Promise<void> 
         });
     }
 });
+
+// 6 fetch lead by id
+app.get("/fetch-lead-by-clientid", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { client } = req.query;
+
+        console.log("Got CLient to fetch ", client)
+
+        if (!client) {
+            res.status(400).json({ message: "Client ID is required" });
+            return;
+        }
+
+        // Call the fetchLeadByClientId function, assuming it's imported correctly
+        const leads = await fetchLeadByClientId(client as string);
+
+        // If no leads found, return a 404
+        if (!leads || leads.length === 0) {
+            res.status(404).json({ message: "No leads found for this client ID" });
+            return;
+        }
+
+        res.json({ message: "Leads fetched successfully", data: leads });
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        res.status(500).json({ error: "Failed to fetch sponsor leads" });
+    }
+});
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
