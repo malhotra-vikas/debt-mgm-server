@@ -19,6 +19,8 @@ interface Sponsor {
     AFFILIATE_ENROLLED_DATE: string;
     SERVICE_TERM: number;
     DEBT_AMT_ENROLLED: number;
+    DRAFTS: number;
+    SETTLEMENTS_REACHED: number;
 }
 
 // Function to read CSV
@@ -51,17 +53,18 @@ export const uploadSponsorLeads = async (filePath: string) => {
 
             const debtAmtEnrolled = sponsor.DEBT_AMT_ENROLLED || 0;
 
+
             console.log("sponsor being added is ", sponsor)
 
             await client.query(
                 `INSERT INTO sponsorsdata (sponsor_name, client_first, client_last, client_zip, client_email, client_mobile,
           client_state, client_dob, client_id, processor_acct, client_status, affiliate_enrolled_date, service_term,
-          debt_amt_enrolled, invited)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+          debt_amt_enrolled, drafts, settlements_reached, invited)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
           ON CONFLICT (CLIENT_ID) DO NOTHING`,
                 [sponsor.SPONSOR_NAME, sponsor.CLIENT_FIRST, sponsor.CLIENT_LAST, sponsor.CLIENT_ZIP, sponsor.CLIENT_EMAIL,
                 sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE, sponsor.CLIENT_DOB, sponsor.CLIENT_ID, sponsor.PROCESSOR_ACCT,
-                sponsor.CLIENT_STATUS, affiliateEnrolledDate, serviceTerm, debtAmtEnrolled]
+                sponsor.CLIENT_STATUS, affiliateEnrolledDate, serviceTerm, debtAmtEnrolled, sponsor.DRAFTS, sponsor.SETTLEMENTS_REACHED]
             );
         }
         console.log("Upload completed.");
@@ -178,11 +181,11 @@ export const updateSponsorLeads = async (filePath: string) => {
             await client.query(
                 `UPDATE sponsorsdata SET client_first = $1, client_last = $2, client_zip = $3, client_mobile = $4,
           client_state = $5, client_dob = $6, processor_acct = $7, client_status = $8, affiliate_enrolled_date = $9,
-          service_term = $10, debt_amt_enrolled = $11, invited = 'pending'
+          service_term = $10, debt_amt_enrolled = $11, drafts = $13, settlements_reached = $14, invited = 'pending'
           WHERE client_email = $12`,
                 [sponsor.CLIENT_FIRST, sponsor.CLIENT_LAST, sponsor.CLIENT_ZIP, sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE,
                 sponsor.CLIENT_DOB, sponsor.PROCESSOR_ACCT, sponsor.CLIENT_STATUS, affiliateEnrolledDate,
-                serviceTerm, debtAmtEnrolled, sponsor.CLIENT_EMAIL]
+                serviceTerm, debtAmtEnrolled, sponsor.CLIENT_EMAIL, sponsor.DRAFTS, sponsor.SETTLEMENTS_REACHED]
             );
         }
         console.log("Update completed.");
@@ -218,7 +221,7 @@ export const fetchLeadByClientId = async (clientId: string) => {
         const result = await client.query(
             `SELECT sponsor_name, client_first, client_last, client_zip, client_email, client_mobile,
                     client_state, client_dob, client_id, processor_acct, client_status, affiliate_enrolled_date, 
-                    service_term, debt_amt_enrolled 
+                    service_term, debt_amt_enrolled, drafts, settlements_reached 
              FROM sponsorsdata WHERE client_id = $1`, [clientId]
         );
 
