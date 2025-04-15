@@ -43,6 +43,9 @@ export const uploadSponsorLeads = async (filePath: string) => {
     try {
         for (const sponsor of sponsors) {
 
+            const cleanClientId = sponsor.CLIENT_ID ? sponsor.CLIENT_ID.trim() : null;
+            console.log("Cleaned CLIENT_ID:", cleanClientId);
+
             // Ensure values are safely converted before checking for empty strings
             const affiliateEnrolledDate =
                 typeof sponsor.AFFILIATE_ENROLLED_DATE === "string" && sponsor.AFFILIATE_ENROLLED_DATE.trim() !== ""
@@ -63,7 +66,7 @@ export const uploadSponsorLeads = async (filePath: string) => {
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
           ON CONFLICT (CLIENT_ID) DO NOTHING`,
                 [sponsor.SPONSOR_NAME, sponsor.CLIENT_FIRST, sponsor.CLIENT_LAST, sponsor.CLIENT_ZIP, sponsor.CLIENT_EMAIL,
-                sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE, sponsor.CLIENT_DOB, sponsor.CLIENT_ID, sponsor.PROCESSOR_ACCT,
+                sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE, sponsor.CLIENT_DOB, cleanClientId, sponsor.PROCESSOR_ACCT,
                 sponsor.CLIENT_STATUS, affiliateEnrolledDate, serviceTerm, debtAmtEnrolled, sponsor.DRAFTS, sponsor.SETTLEMENTS_REACHED]
             );
         }
