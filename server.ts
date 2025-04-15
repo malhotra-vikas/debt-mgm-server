@@ -196,7 +196,7 @@ app.get("/fetch-lead-by-clientid", async (req: Request, res: Response): Promise<
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve static files from the 'uploads' folder
-app.use('/uploads', express.static(path.join(__dirname, 'dist/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Example route to serve a PDF
 app.get('/uploads/:filename', (req, res) => {
