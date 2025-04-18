@@ -40,6 +40,13 @@ export const uploadSponsorLeads = async (filePath: string) => {
     const sponsors = await readCSV(filePath);
 
     const client = await pool.connect();
+
+    let successCount = 0;
+    let failureCount = 0;
+    let duplicateCount = 0;
+    const failedClientIds: string[] = [];
+    const duplicateClientIds: string[] = [];
+
     try {
         for (const sponsor of sponsors) {
 
@@ -59,20 +66,45 @@ export const uploadSponsorLeads = async (filePath: string) => {
 
             console.log("sponsor being added is ", sponsor)
 
-            await client.query(
-                `INSERT INTO sponsorsdata (sponsor_name, client_first, client_last, client_zip, client_email, client_mobile,
-          client_state, client_dob, client_id, processor_acct, client_status, affiliate_enrolled_date, service_term,
-          debt_amt_enrolled, drafts, settlements_reached, invited)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
-          ON CONFLICT (CLIENT_ID) DO NOTHING`,
-                [sponsor.SPONSOR_NAME, sponsor.CLIENT_FIRST, sponsor.CLIENT_LAST, sponsor.CLIENT_ZIP, sponsor.CLIENT_EMAIL,
-                sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE, sponsor.CLIENT_DOB, cleanClientId, sponsor.PROCESSOR_ACCT,
-                sponsor.CLIENT_STATUS, affiliateEnrolledDate, serviceTerm, debtAmtEnrolled, sponsor.DRAFTS, sponsor.SETTLEMENTS_REACHED]
-            );
+            try {
+                const result = await client.query(
+                    `INSERT INTO sponsorsdata (
+                        sponsor_name, client_first, client_last, client_zip, client_email, client_mobile,
+                        client_state, client_dob, client_id, processor_acct, client_status,
+                        affiliate_enrolled_date, service_term, debt_amt_enrolled, drafts, settlements_reached, invited
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
+                    ON CONFLICT (client_id) DO NOTHING
+                    RETURNING client_id`,
+                    [
+                        sponsor.SPONSOR_NAME, sponsor.CLIENT_FIRST, sponsor.CLIENT_LAST, sponsor.CLIENT_ZIP,
+                        sponsor.CLIENT_EMAIL, sponsor.CLIENT_MOBILE, sponsor.CLIENT_STATE, sponsor.CLIENT_DOB,
+                        cleanClientId, sponsor.PROCESSOR_ACCT, sponsor.CLIENT_STATUS, affiliateEnrolledDate,
+                        serviceTerm, debtAmtEnrolled, sponsor.DRAFTS, sponsor.SETTLEMENTS_REACHED
+                    ]
+                );
+
+                if (result.rowCount === 0) {
+                    duplicateCount++;
+                    if (cleanClientId) duplicateClientIds.push(cleanClientId);
+                } else {
+                    successCount++;
+                }
+            } catch (err) {
+                failureCount++;
+                if (cleanClientId) failedClientIds.push(cleanClientId);
+                console.error(`Error inserting sponsor with CLIENT_ID ${cleanClientId}:`, err);
+            }
         }
-        console.log("Upload completed.");
+
+        console.log("Upload Summary:");
+        console.log(`✅ Success: ${successCount}`);
+        console.log(`🔁 Duplicates skipped: ${duplicateCount}`);
+        console.log(`❌ Failures: ${failureCount}`);
+        if (duplicateClientIds.length > 0) console.log("Duplicate CLIENT_IDs:", duplicateClientIds.join(", "));
+        if (failedClientIds.length > 0) console.log("Failed CLIENT_IDs:", failedClientIds.join(", "));
+
     } catch (error) {
-        console.error("Upload error:", error);
+        console.error("Fatal Upload Error:", error);
     } finally {
         client.release();
     }
