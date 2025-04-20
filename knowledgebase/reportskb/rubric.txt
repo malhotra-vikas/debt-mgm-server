@@ -1,0 +1,333 @@
+Merlin ChatBot AI Report
+
+
+INTRODUCTION -
+
+This should be a summary of national statistics that we know about typical household spending.  We should include an exploded pie chart depicting typical disposable / savings percent that a household has available after taxes.  The national averages below depict typical household spending:
+
+Housing = 33%
+Transportation = 17%
+Food = 13%
+Personal Insurance & Pensions = 12%
+Healthcare = 5%
+Misc = 8%
+Savings / Disposable = 12% (usually what is available to address debt obligations). 
+
+OUR INCOME ANALYSIS
+
+We collect the user’s income as they enter it.  We should have their gross monthly income from all sources after their visit to our chatbot.  We should then
+Provide a breakdown of their income including a list of the sources of the income they entered and total it as “gross household income”
+Federal tax information is provided including filing status, estimated tax liability, and estimated effective tax rate.
+We should be able to discern their after-tax monthly income for the user’s household.
+After the user answers the ‘Live Events’ questions in the chatbot session we will know if they have experienced any of the following life events.  We will have a list of life events they are dealing with.  From that, we can adjust their disposable income based on the following table VERY IMPORTANT: the report CANNOT reveal our formula. Only the net effect of the formula on their disposable income:
+Financially supporting extended family = -1%
+Had a catastrophic loss (house fire, natural disaster, etc.) = -1%
+Health Issues = -1.5%
+Family Expanded = -1.5%
+Victim of Fraud = -0.5%
+Divorce = -1.25
+Death of Spouse = -0.5%
+Other = -0.75%
+After making adjustments to disposable income based on life events experienced, we can estimate their monthly disposable income that should be available for paying off their debts.  Let’s cause this the:
+ 
+‘Monthly Income Available to Service Debts’
+
+CREDIT CARD DEBT DETAILS COLLECTED
+The user is providing details about each of their credit cards including:
+Outstanding Balance
+Interest Rate
+Credit Limit
+Typical Monthly Payment Habit:
+Minimum Payment Only
+More Than Minimum
+Currently Not Paying
+Account Is Charged Off
+Payment Status
+Typically Pays ‘On-Time’
+Currently 30+ days late
+Currently 60+ days late
+Currently 90+ days late
+Account Has Been Charged Off
+Their current situation with the card:
+Paying on the card but not making new charges on it
+Paying on the card, and still making charges on it
+Not paying on the card
+Types of purchases they usually make on their credit cards
+Groceries
+Commuting
+Family Support
+Dining & Ent
+Medical Bills
+Childcare
+Travel
+Vices
+Utilities
+Apparel
+Home Repairs
+Self-Care
+Household Items
+Auto Repairs
+Medication
+Education
+Youth Sports
+Home Furnishings
+The frequency of each type of use as:
+Frequently
+Occasionally
+Rarely
+CREDIT CARD DEBT CALCULATIONS
+From those details, we can gather the following information:
+Utilization (%) for each card - calculation is card outstanding balance divided by card credit limit
+aggregate utilization for all credit cards is a weighted average balance of cards
+
+The data will include current estimates, assuming only required minimum payments are made each month, for years to payoff, total amount paid until payoff, total interest paid until payoff, and the percent of the original balance that would be paid in interest over the life of the payoff.  We want PROMINENTLY show these stats in the report in an area called “Credit Card Outlook”.
+Minimum Payment Due for each card uses a calculation of: (card interest rate divided by 12 multiplied by card outstanding balance) + (card outstanding balance times 1%)
+
+After the credit card outlook, we want to show an estimated ‘total minimum monthly payment to service card debts’ assuming the minimum payment for each credit card is made.
+Label it the: “Total Minimum Monthly Cost To Service Credit Card Debts”
+OTHER DEBTS
+
+The chatbot asks if the user has other types of debts such as:
+Back taxes owed
+Student loans
+Personal loans
+Medical bills
+
+For those debts the chatbot collects:
+Total Balance Owed
+Monthly Payment Amount (if any)
+
+For our purpose, if the user is not currently making monthly payments, we can estimate a monthly payment using the following formula for each type of debt:
+Medical Bills: Balance Owed divided by 36 (months)
+Taxes Debt = Balance Owed divided by 36 (months)
+Personal Loan = Balance Owed divided by 60 (months)
+Student Loan = Balance Owed divided by 120 (months)
+The end result of this section is to come up with an estimated monthly amount needed to service the non-credit card debts. Let’s call this the:
+
+“Total Monthly Cost to Service ‘Other’ Debts”
+
+To arrive at a total estimated amount to service all debts, combine: 
+“Total Monthly Cost to Service Credit Card Debts” + “Total Monthly Cost to Service ‘Other’ Debts”
+
+Let’s call this combined cost of debt number the:
+“Total Monthly Cost of Debts”
+
+
+To get a determination of the user’s overall debt situation, calculate the:
+
+Monthly Income Available to Service Debts - Total Monthly Cost of Debts
+
+The result of this calculation is called: “Income To Debt Result”
+
+
+SUMMARY OF FINDINGS & IMPORTANT CALCULATIONS & CLASSIFICATIONS
+
+This section should analyze and summarize the user’s financial situation.  It should evaluate and discuss the following:
+
+Credit Card Utilization - Total / aggregate outstanding balance on all credit cards divided by total aggregate / combined credit limits.  Let’s classify percent of utilization as:
+0.00% - 25.00% utilization = Low
+25.10% - 32.99% = Moderately Low
+33.00% - 45.00% = Moderate
+45.10% - 54.99% = Moderately High
+55.00% - 72.99% = High
+73.00% or more = Very High
+
+Card Payment Status - The chatbot asks the payment status of each credit card.  The choices are:
+On-Time
+30 to 60 days late
+61 to 90 days late
+90+ days late
+Account Charged Off
+
+We will evaluate the total number of credit card accounts to grade the combined payment status.  Our grade scale is:
+Good = more than 65% of the accounts are paid On-Time AND 0% are ‘61 to 90 days late’ OR ‘90+ days late’ OR ‘Account Charged Off’
+Concerning = 50% - 64.99% are paid On-Time AND 0% are ‘61 to 90 days late’ OR ‘90+ days late’ OR ‘Account Charged Off’
+Dire = Less than 50% are paid ‘On-Time’ OR greater than 1% are ‘61 to 90 days late’ OR ‘90+ days late’ OR ‘Account Charged Off’
+NOTE: Pie Chart good here with the four status (on-time, 30 days late, 60 days, 90+ days) and their % in each category.
+
+Card Payment Amounts - We will evaluate the users typical monthly payment amount behavior.  We are trying to determine if they are surviving or making a real dent in paying down their debts.  For this we will:
+Aggregate all of the credit card balances into a total number: Let’s call it the “Aggregate Credit Card Balance”.
+The chatbot collects from the user the typical card payment amount for each credit card.  There are four options. ‘Minimum Payments’, ‘More than Minimum’, ‘Not Being Paid’, and ‘Account Charged Off’.
+We want to determine what portion of the Aggregate Credit Card Balance is being serviced by:
+Minimum Paymemt
+More than minimum
+Not being paid
+Charged-off
+NOTE: Pie chart good here
+Here is how we will evaluate that situation:
+‘In great shape’ = 34.99% or less is ‘Minimum Payments’ AND 0% are ‘Not Being Paid’ or ‘Charged off’
+
+‘In good shape’ = 35% to 66.99% is ‘Minimum Payments’ AND 0% are ‘Not Being Paid’ or ‘Charged off’
+‘Kicking the can down the road’ = 67% or more is ‘Minimum Payments’ AND 0% are ‘Not being paid’ or ‘Charged off’
+‘Have a serious situation brewing’ = 9.99% or more are ‘Not Being Paid’ or more than 1% is ‘Charged Off’.
+
+
+Card Uses - We will evaluate if the user is leveraging credit card(s) primarily for typical uses, surviving on them, or exhibiting concerning behavior. :
+ ‘Typical’ card use behavior is using credit for typical larger purchases that are responsible types of purchases (car repairs, home furnishings, occasional vacations, etc)
+‘Concerning’ card use behavior is using credit more frequently on purchases that are less than necessary.
+‘Survival Mode’ card use behavior is using credit frequently for everyday types of items like groceries, gas, childcare, etc. while also accumulating high card balance utilization.
+IMPORTANT NOTE: we will ONLY include this analysis in the report  if ‘Card Payment Status’ = Concerning OR Dire, or ‘Card Utilization = ‘High’ or ‘Very High’
+Here is a Link to a spreadsheet that classifies each type of card use coupled with frequencies of use as ‘Frequently’, ‘Occassionally’, and ‘Rarely’: https://docs.google.com/spreadsheets/d/10oMCJ-A4KdrRd0BDywXbWKZ4lGMfj7QdBGxf3gt5bPA/edit?usp=sharing 
+NOTE: this analysis, when included, should be accompanied by a pie chart showing the percentages of their selected uses that are concerning, typical, and survival.
+
+Life Events Impact.  The chatbot asks the user to disclose any major life events that could be causing financial hardship.  Events include:
+Victim of Fraud
+Divorce
+Death of Spouse
+Addition to Family
+Catastrophic loss
+Education/Training expenses
+Supporting extended family
+Health Issue
+Other
+
+We should evaluate whether life events are causing financial hardship.  We should evaluate the degree of hardship as follows:
+
+More than one event = significantly impacted
+Divorce (alone) = significantly impacted
+Death (alone) = potentially significantly impacted
+Fraud (alone) = potentially significantly impacted
+Addition to Family (alone) = significantly impacted
+Education Exp (alone) = impacted
+Catastrophic Loss (alone) = impacted
+Supporting extended family (alone) = impacted
+
+
+
+FINAL RECOMMENDATION
+
+This will be a somewhat logical analysis of the Income to Debt Result as the primary driver of the recommendation - supported by the classification of the user’s spending habits, aggregate debt amount, and debt payment characteristics.
+
+The chatbot also asks the user what their goals and preferences are such as:
+
+The importance of maintaining a good credit score
+If they would use equity or sell their home
+Desired timeframe to become debt-free
+Would they liquidate other assets (savings, valuables, etc.)
+If they feel like they hit a bump in the road or in way over their head
+
+We will use the answers as supplemental guidance on our recommendation.  However, the most determining factors for a recommended path are:
+The Income to Debt Result number
+current payment status of debts (on-time, 90+ days late, charged off, etc)
+Payment characteristics on credit cards (minimum payments, more than minimum, etc.) 
+Aggregate Amount outstanding debts
+Credit card utilization percent
+Ratio of credit card debt vs other debt
+equity in home, savings, or assets & willingness to liquidate
+
+The analysis will arrive at one of three paths to recommend to the user and then possibly an option within the path.  The four paths are:
+
+Restructuring Path
+Forgiveness Path
+DIY Path
+Alternative Debt Services
+
+
+
+“Restructuring” Debt Programs Explained: 
+
+Restructuring is a type of debt relief program that involves modifying some terms of a debt, or reorganizing by eliminating one or more debts with one or more new debts.  In a restructuring program, the debtor is not relieved of any principal amount owed on the debt.  The debtor may experience some relief in the cost of the debt (interest rate) or have some fee relief.  But the principal amount remains the same.  This is typically a good path for debtors that may be experiencing a temporary bump in the road, but is expecting to recover and be able to satisfy the full obligation of their debts - albeit with some short-term relief and grace.
+
+“Forgiveness’ Debt Programs Explained:
+
+Forgiveness is a type of debt relief that involves the debtor being “forgiven” on some or all of their debt.  In a forgiveness program, the principal amount of the debt is reduced or eliminated altogether.  This is usually because the debtor and the creditor have agreed that it is not likely the debtor will be in a position to satisfy the full obligation of the debt in the foreseeable future.  Or, in the case of bankruptcy, the federal government has agreed with the debtor that they cannot meet their obligations.
+
+DIY Explained:
+
+Describes a user that probably does not need outside assistance to get their situation under control.  They have all of the resources needed to fix their problem and may just need some high-level guidance and reassurance.  Typically they have the following results from our analysis:
+
+Has higher than average income
+Card Payment Status is typically on-time
+Credit card utilization is Low or Moderate
+Monthly Payment Characteristic is ‘More than minimum’
+
+They may be feeling some anxiety or uneasiness because of a recent life event that may have them thrust into a role they are not accustomed to and may need some help getting their arms around some newly acquired roles.  Typically associated with death of a spouse, divorce, or health issues with a loved one.  In most cases these users probably should focus on simplifying and possibly consolidating debts into a single payment or paying them off altogether with the resources they have available.
+
+Alternative Debt Services Explained:
+
+There are some users that do not fit a debt relief profile.  Usually this is because of the type of debts they have and the composition of their debt mix.  here are some examples:
+
+Users with one credit card AND less than $8,000 in credit card debt AND none of their other debts are unsecured debts (personal loans or similar)
+Users that have high amounts of medical bills, but not much unsecured debt (personal loans, credit cards, etc.)
+Users that have high amounts of student loan debt, but not much unsecured debt
+Users that have high amounts of federal or state back taxes owed but not much unsecured debt.
+To fit a debt relief profile is a balance between total debt size and composition.  The user can have a higher percentage of unsecured debts if the total debt load is really high.
+
+
+Forgiveness Debt Programs Options:
+Debt Settlement
+Bankruptcy
+Restructuring Debt Program Options
+
+Debt Consolidation
+Credit Counseling
+Interest Rate Refinancing
+Loan Modification
+
+DIY Options
+Liquidate savings or investments
+Sell expensive assets
+Home Equity Loan
+Personal Loan
+
+Alternative Debt Services Options
+If medical bills are a significant portion of the debt, then bankruptcy is an option
+If student loans are a significant portion of the debt, then speak with student loan specialists
+If back taxes are a significant portion of the debt, then speak with a tax specialist
+
+Typical Client Profile for the Options:
+
+Personal Loan Characteristics:
+Debt payment status less than 60 days late
+User wants to preserve credit score
+Debt free goal is 4+ yrs
+Income expected to stay same or increase
+Positive “Income to Debt Result”
+Home Equity Loan Characteristics:
+Debt payment status less than 60 days
+Wants to preserve credit score
+Debt Payment status is on-time
+Owns home
+Willing to leverage home
+Equity in home 120% of Aggregate Debt Amount
+Income expected to stay same or increase
+Debt Settlement Characteristics:
+Debt Account Status is not charged off
+User willing to experience negative credit score impact
+debt payment status less than 90+ days late
+User desires to be Debt free in less than three years
+Minimum aggregate outstanding balance on credit cards $15,000
+Total Monthly Cost To Service Credit Card Debts should be greater than $400. 
+Income expected to stay same or increase
+User should be cautioned that debt settlement is likely to damage their credit rating and if it is imperative the user maintains a good credit rating this option may pose a challenge for them
+Bankruptcy Characteristics:
+Willing to sacrifice credit
+Income to Debt Result is less than $300
+debt payment status is 90+ days or charged off
+Income expected to stay same or decrease
+Has no savings or assets to liquidate
+Has significant unsecured debt or medical bills
+User should be cautioned that bankruptcy is likely to damage their credit rating and if it is imperative the user maintains a good credit rating this option may pose a challenge for them
+Tax Specialist
+Federal and/or State back taxes make up the majority of the debts, with unsecured debt being below $10,000
+Student Loan Programs
+Student loans make up the majority of their debts, with unsecured debt being below $10,000
+
+
+Resources we recommend for actionable things that can be done in preparation for resolution:
+
+To get a read on how long it would take to pay off credit cards the user can visit https://dealingwithdebt.org/credit-card-payoff-calculator/ to use Dealing With Debt’s free calculator tool.  Simply entering their card balance and interest rate will tell them how long it will take to pay off the card and how much interest they will pay if making only minimum payments. They can also enter custom monthly payment amount to get scenarios of making more than the minimum payment.
+
+To get a deep understanding of debt relief paths (forgiveness and restructuring) users can take a free course offered by Dealing With Debt called “The Guide to Your Debt Relief Journey”.  The course is located at https://us.dealingwithdebt.org/courses/tgtydsj/ or by visiting dealingwithdebt.org and clicking ‘Resources’ in the main navigation menu
+
+To get a better understanding of rules, laws and regulations of the debt relief industry or to research specific companies offering those services visit the main federal regulatory websites FTC or CFPB or their state’s attorney general website.  Visit this directory to choose your state - state attorney general directory.
+
+To find reputable accredited debt relief companies to work with visit the trade association websites of the debt relief industry - Consumer Debt Relief Initiative (CDRI) and/or American Association for Debt Relief (AADR)
+
+For consumer reports on specific companies check their ratings on reputable websites like Better Business Bureau or TrustPilot
+
+For more personalized support or consultation contact a non-profit credit counseling company such as the National Foundation for Credit Counseling
+
+For additional support and guidance, join the Dealing With Debt’s judgement-free community to engage with peers. Visit dealingwithdebt.org  to join.
+
+
