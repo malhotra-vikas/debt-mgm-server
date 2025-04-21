@@ -345,7 +345,7 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string, a
   <body>
     <!-- Logo Header -->
     <div class="header" style="text-align: center; margin-bottom: 20px;">
-      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" style="width: 150px; height: auto;"
+      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" alt="Merlin Logo" style="width: 100px; height: auto;"
 />
     </div>
 
