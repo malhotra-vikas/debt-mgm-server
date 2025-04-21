@@ -248,11 +248,16 @@ const generateAIReportPdfWithPuppeteer = async (fname: string, lname: string, em
     <html>
       <head><meta charset="utf-8"></head>
       <body>
-        <div class="header">
-            <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" />
+        <div class="header" style="text-align: center; margin-bottom: 20px;">
+            <img 
+                src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" 
+                alt="Merlin Logo" 
+                style="width: 150px; height: auto;"
+            />
         </div>
+
         <div>
-            <h2>MERLIN REPORT for ${fname} ${lname}
+            <h2>MERLIN REPORT for: ${fname} ${lname}
         </div>
         ${aiReport}
         </body>
@@ -344,14 +349,16 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string, a
   </head>
   <body>
     <!-- Logo Header -->
+<!--    
     <div class="header" style="text-align: center; margin-bottom: 20px;">
-      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" alt="Merlin Logo" style="width: 100px; height: auto;"
+
+      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" alt="Merlin Logo" style="height: 60px; display: inline-block;"
 />
     </div>
-
+-->
     <div class="container">
 
-      <h1>Merlin Assessment Report for ${reportData.firstName} ${reportData.lastName}</h1>
+      <h1>Merlin Assessment Report for: ${reportData.firstName} ${reportData.lastName}</h1>
 
             <!-- Income Section -->
       <div class="section">
