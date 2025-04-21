@@ -4,6 +4,8 @@ import path from "path";
 import puppeteer from "puppeteer"; // Import Puppeteer
 import axios from "axios";
 import dotenv from "dotenv";
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 
 // Importing the UserData interface if needed
 import { AINarrative, Data, UserCard } from "../lib/UserData";  // Adjust this path as needed
@@ -11,10 +13,46 @@ import { calculateCardPaymentAmounts, calculateCardPaymentStatus, calculateCredi
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
-const MERLIN_PERSONA = `Your name is Merlin. You are an A.I. Assistant with Dealing With Debt (DWD). 
-You're a financial advisor summarizing a user's credit health. 
-Your goal is to build a trust worthy and reliable debt management report for the users. 
-Your responses will be added to the report that is sent to the users`
+const MERLIN_PERSONA = `
+You are Merlin, a financial AI assistant. Generate a full HTML report that starts with <div>.
+
+KEY FORMATTING:
+- Use only inline styles (no external CSS).
+- All layout must be within a single <div> with: font-family: 'Helvetica Neue', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;
+- Use <h1>, <h2>, <ul>, <li>, <p>, <strong>, <span> as needed.
+- Do not use <table> tags — mimic tables using div/ul/li as styled blocks.
+
+REPORT STRUCTURE SECTIONS:
+The report MUST include all of these sections. Each of these sections MUST also have relevant and meaningful data for the user, based on the Users Finacial Information
+🧾 MERLIN REPORT for [Name]  
+📘 INTRODUCTION  
+💰 INCOME & LIFE SITUATION ANALYSIS  
+💳 CREDIT CARD OUTLOOK  
+📑 OTHER DEBTS  
+🧮 TOTAL DEBT OBLIGATION SUMMARY  
+❗ INCOME TO DEBT RESULT  
+📊 SUMMARY OF FINDINGS  
+✅ FINAL RECOMMENDATION  
+🧰 NEXT STEPS & RESOURCES  
+💬 Final Words from Merlin
+
+KEY VISUAL STANDARDS:
+- Section Titles: font-size: 20px; color: #1E3A8A; font-weight: 600;
+- Paragraphs: font-size: 14px; line-height: 1.6;
+- Bullet points: margin-left: 20px; margin-bottom: 8px;
+- Use emoji-labeled headers in this order:
+
+
+TONE:
+- Compassionate, professional, and highly readable.
+- Mimic the use of symbols, indentation, financial metrics, and clarity.
+
+DO NOT:
+- Use <html>, <head>, or <body> — the HTML is embedded inside a larger layout.
+- Omit visual hierarchy.
+- Write generic summaries — include specific dollar amounts, ratios, timelines, and metrics.
+`;
+
 
 // Define Type for User Data
 interface UserData {
@@ -106,6 +144,25 @@ type ReportData = {
     //recommendations: string[]; // Assuming recommendations is an array of strings
 };
 
+type AIReportData = {
+    email: string;
+    firstName: string;
+    AllSourcesOfHouseHoldIncome: IncomeDetails,
+    MonthlyDisposableIncome: number;
+    lastName: string;
+    federalTaxes: number;
+    lifeEventsList: string,
+    CreditCardDebtSituation: UserCard[]; // Assuming userCards is an array of UserCard objects
+    otherDebts: OtherDebt[];
+    userCardUsagePurposes: string;
+    futureIncomeChanges: string;
+    homeChangesOpenness: string;
+    assetsLiquidationAmount: number;
+    creditScoreImportance: string;
+    desiredDebtFreeTimeframe: string;
+    feelingAboutDebtSituation: string;
+};
+
 const generatePieChart = async (): Promise<Buffer> => {
     const chartData = {
         type: "pie",
@@ -140,7 +197,7 @@ const generatePieChart = async (): Promise<Buffer> => {
             legend: {
                 position: 'bottom',  // Move legend to the bottom
                 labels: {
-                    fontColor: '#000', 
+                    fontColor: '#000',
                     boxWidth: 20, // Set the size of the legend box
                     padding: 10 // Add padding around the legend items
                 }
@@ -148,7 +205,7 @@ const generatePieChart = async (): Promise<Buffer> => {
             // To improve text contrast in the chart
             tooltips: {
                 callbacks: {
-                    label: function(tooltipItem: { label: string; raw: string; }) {
+                    label: function (tooltipItem: { label: string; raw: string; }) {
                         return tooltipItem.label + ": " + tooltipItem.raw + "%"; // Show percentage on hover
                     }
                 }
@@ -173,7 +230,52 @@ const generatePieChart = async (): Promise<Buffer> => {
     }
 };
 
-const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): Promise<string> => {
+const generateAIReportPdfWithPuppeteer = async (fname: string, lname: string, email: string, aiReport: string, fileName: string): Promise<string> => {
+    //    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        headless: true, // or true for older versions
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    const page = await browser.newPage();
+
+    // Get the current timestamp to append as a cache buster
+    const timestamp = new Date().getTime();
+    const url = `http://${process.env.HOST}:${process.env.PORT}/styles/report.css?timestamp=${timestamp}`
+
+    console.log("cleanedAiReport is ", aiReport)
+    const htmlWrapper = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <div class="header">
+            <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" />
+        </div>
+        <div>
+            <h2>MERLIN REPORT for ${fname} ${lname}
+        </div>
+        ${aiReport}
+        </body>
+    </html>
+  `;
+
+    await page.setContent(htmlWrapper, { waitUntil: 'load' });
+
+    const pdfPath = path.join(__dirname, `../uploads/${fileName}`);
+    await page.pdf({
+        path: pdfPath,
+        format: 'A4',
+        printBackground: true
+    });
+
+    console.log("pdfPath is ", pdfPath)
+    await browser.close();
+
+    return pdfPath;
+};
+
+
+const generatePdfWithPuppeteer = async (reportData: ReportData, email: string, aiReport: string): Promise<string> => {
     //    const browser = await puppeteer.launch();
     const browser = await puppeteer.launch({
         headless: true, // or true for older versions
@@ -242,8 +344,9 @@ const generatePdfWithPuppeteer = async (reportData: ReportData, email: string): 
   </head>
   <body>
     <!-- Logo Header -->
-    <div class="header">
-      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" />
+    <div class="header" style="text-align: center; margin-bottom: 20px;">
+      <img src="http://${process.env.HOST}:${process.env.PORT}/logo/logo.png" class="logo" alt="Merlin Logo" style="width: 150px; height: auto;"
+/>
     </div>
 
     <div class="container">
@@ -818,13 +921,11 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
             });
 
 
-            //console.log(" enrichedCards atds ",  enrichedCards)
             // Calculating total credit card debt
             const totalCCDebt = enrichedCards.reduce((total: any, card: { minPaymentDue: any; }) => {
                 return total + card.minPaymentDue; // Sum the balance of each credit card
             }, 0).toFixed(2);
 
-            //console.log(" userData.data.userOtherDebts atds ",  userData.data.userOtherDebts)
 
             // Calculating total other debt
             const totalOtherDebt = userData.data.userOtherDebts.reduce((total: any, debt: { monthlyPaymentAmount: number; debtType: any; amountOwed: number; }) => {
@@ -850,11 +951,10 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 return total + minimumPayment;
             }, 0).toFixed(2);
 
-            //console.log("TOTAL CC DEBET is ", totalCCDebt)
-            //console.log("TOTAL OTHER DEBET is ", totalOtherDebt)
-
             const aiNarrativeIncomeToDebt = await buildAiNarrativeIncomeToDebt(userName, userDisposableIncome, totalCCDebt, totalOtherDebt)
             //console.log(`📌 Successfully computed aiNarrativeIncomeToDebt: ${aiNarrativeIncomeToDebt} `); 
+
+            //const aiNarrativeIncomeToDebt = await buildAiReport(userName, userDisposableIncome, totalCCDebt, totalOtherDebt)
 
             // Generate Pie Chart for Household Spending
             const chartBuffer = await generatePieChart();
@@ -895,6 +995,38 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 finalNote: ""
             };
 
+            // Preparing data for the report
+            const aiReportData: AIReportData = {
+                email,
+                AllSourcesOfHouseHoldIncome: fetchAllIncomeForHousehold,
+                // Capitalizing the first letter of the firstName
+                firstName: userData.data.personFirstName.charAt(0).toUpperCase() + userData.data.personFirstName.slice(1),
+                lastName: userData.data.personLastName.charAt(0).toUpperCase() + userData.data.personLastName.slice(1),
+                MonthlyDisposableIncome: userDisposableIncome,
+                federalTaxes,
+                lifeEventsList,
+                CreditCardDebtSituation: enrichedCards,
+                otherDebts: userData.data.userOtherDebts,
+                userCardUsagePurposes: userData.data.userCardsPurposes,
+                futureIncomeChanges: userData.data.futureIncomeChanges,
+                homeChangesOpenness: userData.data.homeChangesOpenness,
+                assetsLiquidationAmount: userData.data.assetsLiquidationAmount,
+                creditScoreImportance: userData.data.creditScoreImportance,
+                desiredDebtFreeTimeframe: userData.data.desiredDebtFreeTimeframe,
+                feelingAboutDebtSituation: userData.data.feelingAboutDebtSituation,
+            };
+
+            //console.log("Report data cleaned up as ", aiReportData)
+            const aiReport = await buildAiReport(aiReportData)
+            // Strip ```html and ``` from beginning and end
+            const cleanedAiReport = aiReport
+                .replace(/^```html\s*/i, '')  // Remove starting ```html (case-insensitive)
+                .replace(/```html/gi, '')
+                .replace(/```/g, '')
+                .replace(/```$/, '')
+                .trim();
+
+
             const {
                 chartBase64: _chartBase64,
                 aiNarrativeHouseholdIncome: _aiNarrativeHouseholdIncome,
@@ -906,36 +1038,43 @@ const merlinReportHandler = async (req: Request, res: Response, next: NextFuncti
                 ...filteredReportData
             } = reportData;
 
-            //console.log("Filtered REPORT DATA:", JSON.stringify(filteredReportData, null, 2));
             const aiNarrativeFinalRecommendation = await buildAiNarrativeFinalRecommendation(userName, JSON.stringify(filteredReportData, null, 2))
-            const cleanedData = aiNarrativeFinalRecommendation.replace(/`/g, ''); // remove backticks
-            // Remove the 'json' prefix and any potential extra whitespace
-            const cleanedDataWithoutPrefix = cleanedData.replace(/^json/, '').trim();
+            //console.log("cleanedDataWithoutPrefix is ", aiNarrativeFinalRecommendation);
 
-            console.log("cleanedDataWithoutPrefix is ", cleanedDataWithoutPrefix);
-
-            const jsonaiNarrativeFinalRecommendation = JSON.parse(cleanedDataWithoutPrefix);
-            const { recommendation, summary, recommendationFactors, finalNote } = jsonaiNarrativeFinalRecommendation;
-
-
-            console.log("recommendation is ", recommendation);
-            console.log("summary is ", summary);
-            console.log("recommendationFactors is ", recommendationFactors);
-            console.log("finalNote is ", finalNote);
-
-            reportData.recommendation = recommendation
-            reportData.summary = summary
-            reportData.recommendationFactors = recommendationFactors
-            reportData.finalNote = finalNote
+            const fileName = `${uuidv4()}.pdf`;
 
             // Generate PDF using Puppeteer
-            const pdfPath = await generatePdfWithPuppeteer(reportData, email);
+            //const pdfPath = await generatePdfWithPuppeteer(reportData, email);
+            const pdfPath = await generateAIReportPdfWithPuppeteer(reportData.firstName, reportData.lastName, email, cleanedAiReport, fileName);
 
             // Return the PDF path in the response
             res.status(200).json({
                 message: "PDF report generated successfully",
-                reportUrl: `/uploads/${email}.pdf`
+                reportUrl: `/uploads/${fileName}`
             });
+
+            if (pdfPath) {
+                const reportLink = `http://${process.env.HOST}:${process.env.PORT}/uploads/${fileName}`;
+                const webhookUrl = `https://us.dealingwithdebt.org/wp-json/uap/v2/uap-8647-8648` +
+                    `?emailAddress=${encodeURIComponent(email)}` +
+                    `&reportLink=${encodeURIComponent(reportLink)}` +
+                    `&firstName=${encodeURIComponent(userData.data.personFirstName)}` +
+                    `&lastName=${encodeURIComponent(userData.data.personLastName)}`;
+
+                try {
+                    const webhookResponse = await axios.get(webhookUrl);
+                    console.log("✅ Webhook triggered successfully:", webhookResponse.data);
+                } catch (error) {
+                    if (axios.isAxiosError(error)) {
+
+                        console.error("❌ Webhook Error Response:", error.response?.data || error.message);
+                    } else {
+                        console.error("❌ Failed to send webhook:", error);
+                    }
+                }
+
+            }
+
 
         } else {
             console.log("📌 Method Not Allowed: ", req.method);
@@ -975,7 +1114,8 @@ const generateRecommendations = (userData: UserData): string => {
 
 export default merlinReportHandler;
 
-async function runMerlinAI(effectivePrompt: string) {
+async function runMerlinAI(effectivePrompt: string, retries = 5): Promise<any> {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     const chatMessages = [
         {
@@ -985,44 +1125,157 @@ async function runMerlinAI(effectivePrompt: string) {
     ];
 
     const openaiPayload = {
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: chatMessages,
         stream: false,
+        temperature: 0.7
     }
 
-    try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify(openaiPayload),
-        })
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify(openaiPayload),
+            });
 
+            if (!response.ok) {
+                const errText = await response.text();
+                const msg = `OpenAI API Error: ${response.status} - ${response.statusText}`;
+                if (response.status === 429 && attempt < retries) {
+                    console.warn(`⚠️ ${msg}. Retrying in ${Math.pow(2, attempt)}s...`);
+                    await delay(Math.pow(2, attempt) * 1000); // exponential backoff
+                    continue;
+                }
+                throw new Error(`${msg}\n${errText}`);
+            }
 
-        if (!response.ok) {
-            throw new Error(`OpenAI API Error: ${response.status} - ${response.statusText}`);
+            const data = await response.json();
+            const result = data?.choices?.[0]?.message?.content?.trim() || "No output.";
+            return result;
+
+        } catch (err: any) {
+            console.error("runMerlinAI error:", err.message || err);
+            if (attempt === retries) throw err;
+            await delay(Math.pow(2, attempt) * 1000);
         }
-
-        const responseData = await response.json(); // Extract JSON response
-        //console.log("askOpenAI - Parsed Response:", responseData);
-
-        // Extract AI response text safely
-        const aiResponse = responseData?.choices?.[0]?.message?.content?.trim() || "No response from OpenAI";
-
-        return aiResponse
-
-    } catch (error: any) {
-        console.error("Error in askOpenAI:", error);
-        if (error.response) {
-            console.error("HTTP status:", error.response.status);
-            console.error("Response body:", error.response.data);
-            if (error.response.status === 429) console.error("Rate limit exceeded.");
-            if (error.response.status === 503) console.error("Service unavailable.");
-        }
-        return "I'm sorry, but I couldn't fetch an answer right now. Please try again later.";
     }
+
+    throw new Error("Max retries exceeded for OpenAI call");
+}
+
+async function buildAiReport(userObject: AIReportData) {
+    const kbDir = path.join(process.cwd(), 'knowledgebase', 'reportskb');
+
+    // Load both guideline and rubric files
+    const [guidelinesContent, rubricContent] = await Promise.all([
+        fs.readFile(path.join(kbDir, 'guidelines.txt'), 'utf-8'),
+        fs.readFile(path.join(kbDir, 'rubric.txt'), 'utf-8'),
+    ]);
+
+    const promptBase = `
+  ${MERLIN_PERSONA}.
+  
+  📘 Report Guidelines:
+  ${guidelinesContent}
+  
+  📊 Report Rubric:
+  ${rubricContent}
+  
+  👤 User Data:
+  ${JSON.stringify(userObject, null, 2)}
+  `;
+
+    // SECTIONAL PROMPT BUILDER
+    const generateSection = async (title: string) => {
+        const sectionPrompt = `
+  ${promptBase}
+  
+  Now write ONLY the section titled "${title}" using full HTML <h2>, <p>, and <ul> as needed.
+  
+  🛑 DO NOT generate placeholder content.
+  ✅ Include real, data-backed insights based on the user data.
+  ✅ Each section should be no more than 1–2 paragraphs or 200 words.
+  ✅ Use bullet points to represent complex information efficiently.
+  ✅ Avoid motivational filler unless required by the tone section.
+  ✅ Use direct facts, metrics, and comparison (e.g., “You pay $423 more than your disposable income.”)
+
+  
+  Your output must begin with: <div style="font-family: 'Helvetica Neue', ... 
+  `;
+        return await runMerlinAI(sectionPrompt);
+    };
+
+    const sectionTitles = [
+//        '🧾 MERLIN REPORT for [Name]',
+        '📘 INTRODUCTION',
+        '💰 INCOME & LIFE SITUATION ANALYSIS',
+        '💳 CREDIT CARD OUTLOOK',
+        '📑 OTHER DEBTS',
+        '🧮 TOTAL DEBT OBLIGATION SUMMARY',
+        '❗ INCOME TO DEBT RESULT',
+        '📊 SUMMARY OF FINDINGS',
+        '✅ FINAL RECOMMENDATION',
+        '🧰 NEXT STEPS & RESOURCES',
+        '💬 Final Words from Merlin',
+    ];
+
+    const sections: string[] = [];
+    for (const title of sectionTitles) {
+      const section = await generateSection(title);
+      sections.push(section);
+      await new Promise(res => setTimeout(res, 1500)); // slight delay to space requests
+    }
+  
+    // Join all sections into a single <div> container (wrapped for layout)
+    const combinedHtml = `
+  <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 14px; line-height: 1.7; color: #111;">
+    ${sections.join('\n\n')}
+  </div>
+  `;
+
+    return combinedHtml;
+}
+
+async function oldbuildAiReport(userObject: AIReportData) {
+    // Step 1: Load rubric/guidelines from the local knowledge base
+    const kbDir = path.join(process.cwd(), 'knowledgebase', 'reportskb');
+
+    // Load both guideline and rubric files
+    const [guidelinesContent, rubricContent] = await Promise.all([
+        fs.readFile(path.join(kbDir, 'guidelines.txt'), 'utf-8'),
+        fs.readFile(path.join(kbDir, 'rubric.txt'), 'utf-8'),
+    ]);
+
+    // Step 2: Combine into an AI-friendly prompt
+    const effectivePrompt = `
+    Using the following user data, generate a report for a user named ${userObject.firstName} that adheres the Rport Guidelines and Report Rubric for visual structure and content detail. The report MUST be 4-6 pages long. 
+
+    USER DATA:
+        ${JSON.stringify(userObject, null, 2)}
+    Follow the persona instructions exactly. The output must be a single <div> element and follow all visual rules.
+
+    REPORT GUIDELINES:
+        ${guidelinesContent}
+
+    REPORT RUBRIC:
+        ${rubricContent}
+
+    Do not generate <html> or <body> tags.
+    Do not include placeholder sections — write real values for each based on the data provided.
+    `
+
+    console.log("Ai Report : effectivePrompt is ", effectivePrompt)
+
+    //console.log("effectivePrompt is ", effectivePrompt);
+    const aiReport = await runMerlinAI(effectivePrompt);
+
+    return aiReport
+
+
 }
 
 
@@ -1032,12 +1285,12 @@ async function buildAiNarrativeFinalRecommendation(userName: string, userObject:
     User Details on Income, Debts, and Payment Behaviour: ${userObject}
     User's Name: ${userName}
     
-    Based on this information, generate a personalized recommendations for the user, broken into 4 paragraphs. The response should be a JSON with these 4 parts/ paras
-    1-para should be your recommendation. Use key "recommendation" in the JSON
-    2-para should be a maximum of 40 words summary on why this is the right recoemmndation for the user. Use key "summary" in the JSON
-    3-para should be a table of recommndation factors and how they map to the user's data. Use key "recommendationFactors" in the JSON. This should have factorKey and factorValue.
+    Based on this information, generate a personalized recommendations for the user, broken into 4 paragraphs. The response should have these 4 parts/ paras
+    1-para should be your recommendation. Use key "recommendation"
+    2-para should be a maximum of 40 words summary on why this is the right recoemmndation for the user. Use key "summary"
+    3-para should be a table of recommndation factors and how they map to the user's data. Use key "recommendationFactors". This should have factorKey and factorValue.
     4-para should be a 50 words final note from Merlin that acknowledges the situation user is in, applauds them for taking the steps to be better at Debt.
-    This para MSUT also encourage users to take the next step as well as motivate them. Use key "finalNote" in the JSON
+    This para MSUT also encourage users to take the next step as well as motivate them. Use key "finalNote"
     
     **Key Factors for Recommendation**:
     The most important factors in recommending a path are:

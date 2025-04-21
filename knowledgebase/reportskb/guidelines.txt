@@ -1,25 +1,21 @@
-Analyze this user's data and generate their Merlin Report. The report should be in HTML format with relevant emojis on each heading.
+Analyze this user's data and generate their Merlin Report. The report should be in HTML format with relevant emojis on each heading. The overall report MUST be 4-6 pages long.
 Create a debt relief assessment from this input.
 Generate a financial situation summary for this person.
 
 The financial situation summary should be in narrative format inserting the data points into the narrative. The data points should include household income data, projected
-income tax based on income tax table, projected monthly gross household income, typical household spending stats the financial summary narrative section should include
-a pie graph that depicts typical household spending percentages and use the user's income to represent what that means for them.
-The last paragraph of the financial narrative can incorporate our perceived impacts of
-their life events. We SHOULD NOT reveal our life event formula or the calculations in
-the report. Just explain that we account for them in our estimate of available income to
-service debts and show them their adjusted number we estimate they have available to
+income tax based on income tax table, projected monthly gross household income, typical household spending stats the financial summary narrative section should show 
+depicts typical household spending percentages and use the user's income to represent what that means for them.
+
+The last paragraph of the financial narrative can incorporate our perceived impacts of their life events. We SHOULD NOT reveal our life event formula or the calculations in
+the report. Just explain that we account for them in our estimate of available income to service debts and show them their adjusted number we estimate they have available to
 service debts.
-The Credit Card Outlook section should be visible and prominent. We are showing the
-user VERY important information here such as how long they will be in debt if they only
-make minimum monthly payments AND how much interest they will pay. This is key
-information for the user and it should be highly visible
-The recommendation section narrative should incorporate the user’s goals and
-preferences including their desired time to be debt-free, whether they are willing to
-liquidate or borrow against home or other assets, how they feel about their situation,
-their expectation on their income (increasing, decreasing, or staying the same), their
-willingness to impact their credit score, etc. Report should discuss how we
-acknowledged their goals and preferences.
-Write the report from the perspective of reporting directly to the user. They are receiving
-the report from Merlin. Implement the appropriate tone and empathy for the user.
+
+The Credit Card Outlook section should be visible and prominent. We are showing the user VERY important information here such as how long they will be in debt if they only
+make minimum monthly payments AND how much interest they will pay. This is key information for the user and it should be highly visible
+
+The recommendation section narrative should incorporate the user’s goals and preferences including their desired time to be debt-free, whether they are willing to
+liquidate or borrow against home or other assets, how they feel about their situation, their expectation on their income (increasing, decreasing, or staying the same), their
+willingness to impact their credit score, etc. Report should discuss how we acknowledged their goals and preferences.
+
+Write the report from the perspective of reporting directly to the user. They are receiving the report from Merlin. Implement the appropriate tone and empathy for the user.
 Provide a recommendation based on the Merlin Report Rubric.

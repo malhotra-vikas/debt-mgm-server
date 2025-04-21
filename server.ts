@@ -198,9 +198,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve static files from the 'uploads' folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Assuming app is already declared
+app.use('/logo', express.static(path.join(__dirname, '../public/logo')));
+
 // Example route to serve a PDF
 app.get('/uploads/:filename', (req, res) => {
-    const filePath = path.join(__dirname, 'dist/uploads', req.params.filename);
+    let filePath = path.join(__dirname, 'dist/uploads', req.params.filename);
+    res.sendFile(filePath);
+
+    filePath = path.join(__dirname, 'uploads', req.params.filename);
     res.sendFile(filePath);
 });
 
